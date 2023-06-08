@@ -1,0 +1,17 @@
+body {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
+  height: 100vh;
+  margin: 0;
+  background-color: #f0f0f0;
+}
+
+#drawArea {
+  border: 1px solid #000;
+}
+
+button {
+  margin-top: 20px;
+}
