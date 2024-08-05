@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Executive Headcount Prediction Tool</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            line-height: 1.6;
+            color: #333;
+            margin: 0;
+            padding: 20px;
+            background-color: #f0f0f0;
+        }
+        .container {
+            max-width: 1000px;
+            margin: auto;
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 0 20px rgba(0,0,0,0.1);
+        }
+        h1, h2 {
+            color: #2c3e50;
+            margin-bottom: 20px;
+        }
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #34495e;
+        }
+        input[type="number"] {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #bdc3c7;
+            border-radius: 4px;
+            font-size: 16px;
+        }
+        button {
+            background-color: #3498db;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: #2980b9;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+            font-weight: bold;
+        }
+        .info-box {
+            background-color: #e7f3fe;
+            border-left: 5px solid #2196F3;
+            padding: 15px;
+            margin-top: 20px;
+        }
+        .tooltip {
+            position: relative;
+            display: inline-block;
+            border-bottom: 1px dotted #34495e;
+            cursor: help;
+        }
+        .tooltip .tooltiptext {
+            visibility: hidden;
+            width: 250px;
+            background-color: #34495e;
+            color: #fff;
+            text-align: center;
+            border-radius: 6px;
+            padding: 10px;
+            position: absolute;
+            z-index: 1;
+            bottom: 125%;
+            left: 50%;
+            margin-left: -125px;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        .tooltip:hover .tooltiptext {
+            visibility: visible;
+            opacity: 1;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Executive Headcount Prediction Tool</h1>
+        <form id="headcountForm">
+            <div class="form-grid">
+                <div class="form-group">
+                    <label for="revenue">Projected Annual Revenue Growth (%)</label>
+                    <input type="number" id="revenue" required min="0" max="100" step="0.1">
+                </div>
+                <div class="form-group">
+                    <label for="efficiency" class="tooltip">Efficiency Improvement (%)
+                        <span class="tooltiptext">Expected increase in productivity due to process improvements, technology adoption, or staff upskilling.</span>
+                    </label>
+                    <input type="number" id="efficiency" required min="0" max="100" step="0.1">
+                </div>
+                <div class="form-group">
+                    <label for="attrition" class="tooltip">Expected Attrition Rate (%)
+                        <span class="tooltiptext">The rate at which employees leave the company annually.</span>
+                    </label>
+                    <input type="number" id="attrition" required min="0" max="100" step="0.1">
+                </div>
+            </div>
+            <h2>Current Headcount</h2>
+            <div class="form-grid">
+                <div class="form-group">
+                    <label for="director">Directors</label>
+                    <input type="number" id="director" required min="0">
+                </div>
+                <div class="form-group">
+                    <label for="seniorManager">Senior Managers</label>
+                    <input type="number" id="seniorManager" required min="0">
+                </div>
+                <div class="form-group">
+                    <label for="manager">Managers</label>
+                    <input type="number" id="manager" required min="0">
+                </div>
+                <div class="form-group">
+                    <label for="senior">Seniors</label>
+                    <input type="number" id="senior" required min="0">
+                </div>
+                <div class="form-group">
+                    <label for="staff">Staff</label>
+                    <input type="number" id="staff" required min="0">
+                </div>
+            </div>
+            <button type="submit">Calculate Headcount Needs</button>
+        </form>
+        <div id="result"></div>
+        <div class="info-box">
+            <h3>Understanding Attrition</h3>
+            <p>Attrition rate refers to the rate at which employees leave a company over a period, typically annually. It's calculated as:</p>
+            <p><strong>Attrition Rate = (Number of Departures / Average Number of Employees) x 100</strong></p>
+            <p>Standard attrition rates vary by industry and company size. For CPA firms:</p>
+            <ul>
+                <li>Small firms (less than 50 employees): 10-15%</li>
+                <li>Mid-size firms (50-500 employees): 12-20%</li>
+                <li>Large firms (over 500 employees): 15-25%</li>
+            </ul>
+            <p>These are general guidelines. Your firm's specific rate may vary based on factors like company culture, workload, compensation, and career development opportunities.</p>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('headcountForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const revenueGrowth = parseFloat(document.getElementById('revenue').value) / 100;
+            const efficiencyImprovement = parseFloat(document.getElementById('efficiency').value) / 100;
+            const attritionRate = parseFloat(document.getElementById('attrition').value) / 100;
+            
+            const currentLevels = {
+                director: parseInt(document.getElementById('director').value),
+                seniorManager: parseInt(document.getElementById('seniorManager').value),
+                manager: parseInt(document.getElementById('manager').value),
+                senior: parseInt(document.getElementById('senior').value),
+                staff: parseInt(document.getElementById('staff').value)
+            };
+
+            const currentTotal = Object.values(currentLevels).reduce((a, b) => a + b, 0);
+
+            // Calculate new headcount needed
+            const growthFactor = 1 + revenueGrowth;
+            const efficiencyFactor = 1 - efficiencyImprovement;
+            const attritionFactor = 1 + attritionRate;
+
+            const newTotal = Math.round(currentTotal * growthFactor * efficiencyFactor * attritionFactor);
+            const totalNewHires = newTotal - currentTotal;
+
+            // Distribute new hires across levels
+            const levelDistribution = {
+                director: 0.05,
+                seniorManager: 0.10,
+                manager: 0.15,
+                senior: 0.30,
+                staff: 0.40
+            };
+
+            const newHires = {};
+            for (const level in levelDistribution) {
+                newHires[level] = Math.round(totalNewHires * levelDistribution[level]);
+            }
+
+            let resultHtml = `
+                <h2>Headcount Prediction Results</h2>
+                <table>
+                    <tr>
+                        <th>Level</th>
+                        <th>Current</th>
+                        <th>New Hires</th>
+                        <th>New Total</th>
+                    </tr>
+            `;
+
+            for (const level in currentLevels) {
+                const levelName = level.charAt(0).toUpperCase() + level.slice(1);
+                const current = currentLevels[level];
+                const hires = newHires[level];
+                const newLevelTotal = current + hires;
+                
+                resultHtml += `
+                    <tr>
+                        <td>${levelName}</td>
+                        <td>${current}</td>
+                        <td>${hires}</td>
+                        <td>${newLevelTotal}</td>
+                    </tr>
+                `;
+            }
+
+            resultHtml += `
+                    <tr>
+                        <th>Total</th>
+                        <th>${currentTotal}</th>
+                        <th>${totalNewHires}</th>
+                        <th>${newTotal}</th>
+                    </tr>
+                </table>
+            `;
+
+            document.getElementById('result').innerHTML = resultHtml;
+        });
+    </script>
+</body>
+</html>
