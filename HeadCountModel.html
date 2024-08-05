@@ -73,12 +73,6 @@
             background-color: #f2f2f2;
             font-weight: bold;
         }
-        .info-box {
-            background-color: #e7f3fe;
-            border-left: 5px solid #2196F3;
-            padding: 15px;
-            margin-top: 20px;
-        }
         .tooltip {
             position: relative;
             display: inline-block;
@@ -155,18 +149,6 @@
             <button type="submit">Calculate Headcount Needs</button>
         </form>
         <div id="result"></div>
-        <div class="info-box">
-            <h3>Understanding Attrition</h3>
-            <p>Attrition rate refers to the rate at which employees leave a company over a period, typically annually. It's calculated as:</p>
-            <p><strong>Attrition Rate = (Number of Departures / Average Number of Employees) x 100</strong></p>
-            <p>Standard attrition rates vary by industry and company size. For CPA firms:</p>
-            <ul>
-                <li>Small firms (less than 50 employees): 10-15%</li>
-                <li>Mid-size firms (50-500 employees): 12-20%</li>
-                <li>Large firms (over 500 employees): 15-25%</li>
-            </ul>
-            <p>These are general guidelines. Your firm's specific rate may vary based on factors like company culture, workload, compensation, and career development opportunities.</p>
-        </div>
     </div>
 
     <script>
@@ -205,9 +187,15 @@
             };
 
             const newHires = {};
+            let calculatedTotalNewHires = 0;
             for (const level in levelDistribution) {
                 newHires[level] = Math.round(totalNewHires * levelDistribution[level]);
+                calculatedTotalNewHires += newHires[level];
             }
+
+            // Adjust for rounding errors
+            const roundingError = totalNewHires - calculatedTotalNewHires;
+            newHires.staff += roundingError; // Add any rounding error to the staff level
 
             let resultHtml = `
                 <h2>Headcount Prediction Results</h2>
@@ -220,12 +208,20 @@
                     </tr>
             `;
 
+            let totalCurrent = 0;
+            let totalNewHiresSum = 0;
+            let totalNewTotal = 0;
+
             for (const level in currentLevels) {
                 const levelName = level.charAt(0).toUpperCase() + level.slice(1);
                 const current = currentLevels[level];
                 const hires = newHires[level];
                 const newLevelTotal = current + hires;
                 
+                totalCurrent += current;
+                totalNewHiresSum += hires;
+                totalNewTotal += newLevelTotal;
+
                 resultHtml += `
                     <tr>
                         <td>${levelName}</td>
@@ -239,9 +235,9 @@
             resultHtml += `
                     <tr>
                         <th>Total</th>
-                        <th>${currentTotal}</th>
-                        <th>${totalNewHires}</th>
-                        <th>${newTotal}</th>
+                        <th>${totalCurrent}</th>
+                        <th>${totalNewHiresSum}</th>
+                        <th>${totalNewTotal}</th>
                     </tr>
                 </table>
             `;
