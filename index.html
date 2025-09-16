@@ -1001,6 +1001,103 @@
             from { opacity: 0; }
             to { opacity: 1; }
         }
+
+        /* Feeding Schedule Card */
+        .feeding-schedule-card {
+            background: var(--card-bg);
+            border-radius: 20px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: var(--shadow);
+            text-align: center;
+        }
+
+        .next-feeding {
+            padding: 15px;
+            background: linear-gradient(135deg, var(--accent) 0%, rgba(200, 182, 219, 0.3) 100%);
+            border-radius: 15px;
+            margin-top: 10px;
+        }
+
+        .next-feeding-label {
+            font-size: 12px;
+            color: var(--text-light);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 10px;
+        }
+
+        .next-feeding-time {
+            font-size: 36px;
+            font-weight: bold;
+            color: var(--primary);
+            font-family: 'Courier New', monospace;
+            margin-bottom: 15px;
+        }
+
+        .feeding-interval {
+            margin-top: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .feeding-interval label {
+            font-size: 13px;
+            color: var(--text);
+        }
+
+        .feeding-interval select {
+            padding: 8px 12px;
+            border: 2px solid var(--accent);
+            border-radius: 10px;
+            background: var(--card-bg);
+            color: var(--text);
+            font-size: 13px;
+            cursor: pointer;
+        }
+
+        /* Voice Commands Help - Bilingual */
+        .voice-help-card {
+            background: var(--card-bg);
+            border-radius: 20px;
+            padding: 20px;
+            margin-top: 20px;
+            box-shadow: var(--shadow);
+        }
+
+        .language-toggle {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .lang-btn {
+            padding: 6px 16px;
+            border: none;
+            border-radius: 20px;
+            background: var(--accent);
+            color: var(--primary-dark);
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .lang-btn.active {
+            background: var(--primary);
+            color: white;
+        }
+
+        .voice-command-list {
+            display: none;
+        }
+
+        .voice-command-list.active {
+            display: block;
+        }
     </style>
 </head>
 <body class="pregnancy-mode">
@@ -1157,6 +1254,26 @@
 
         <!-- BABY MODE CONTENT -->
         <div class="baby-mode-content">
+            <!-- Feeding Schedule Card -->
+            <div class="feeding-schedule-card">
+                <div class="section-title">
+                    <span>⏰</span> Feeding Schedule
+                </div>
+                <div class="next-feeding">
+                    <div class="next-feeding-label">Next Feeding In</div>
+                    <div class="next-feeding-time" id="nextFeedingTime">--:--</div>
+                    <div class="feeding-interval">
+                        <label>Feeding Interval:</label>
+                        <select id="feedingInterval" onchange="updateFeedingInterval()">
+                            <option value="2">Every 2 hours</option>
+                            <option value="3" selected>Every 3 hours</option>
+                            <option value="4">Every 4 hours</option>
+                            <option value="0">On demand (no schedule)</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
             <!-- Stats Overview -->
             <div class="stats-overview">
                 <div class="stat-card">
@@ -1339,14 +1456,14 @@
         
         // TODO: Replace with your Firebase config
         const firebaseConfig = {
-  apiKey: "AIzaSyCOyRtkQfHK593CfOwQe33on5mUEPYduEc",
-  authDomain: "avi-tracker.firebaseapp.com",
-  databaseURL: "https://avi-tracker-default-rtdb.firebaseio.com",
-  projectId: "avi-tracker",
-  storageBucket: "avi-tracker.firebasestorage.app",
-  messagingSenderId: "783062575404",
-  appId: "1:783062575404:web:2ce2e7812bec4b2d4ee489"
-};
+            apiKey: "YOUR_API_KEY",
+            authDomain: "YOUR_AUTH_DOMAIN",
+            databaseURL: "YOUR_DATABASE_URL",
+            projectId: "YOUR_PROJECT_ID",
+            storageBucket: "YOUR_STORAGE_BUCKET",
+            messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+            appId: "YOUR_APP_ID"
+        };
 
         // Initialize Firebase
         let database;
@@ -1441,6 +1558,15 @@
             
             // Update timers
             setInterval(updateTimers, 1000);
+            
+            // Update feeding schedule
+            setInterval(updateNextFeeding, 60000); // Update every minute
+            
+            // Load saved feeding interval
+            const savedInterval = localStorage.getItem('feedingInterval');
+            if (savedInterval && document.getElementById('feedingInterval')) {
+                document.getElementById('feedingInterval').value = savedInterval;
+            }
         }
         
         function loadSavedMode() {
@@ -1705,6 +1831,7 @@
                             </div>
                             <div class="log-time">${time} ${details ? '• ' + details : ''}</div>
                         </div>
+                        <button class="log-delete" onclick="deleteKickActivity('${event.id || event.timestamp}')">✕</button>
                     </div>
                 `;
             }).join('');
@@ -2076,17 +2203,20 @@
             console.log('Processing command:', command);
             
             if (currentMode === 'pregnancy') {
-                // Pregnancy mode commands
-                if (command.includes('kick') || command.includes('movement') || command.includes('move')) {
+                // Pregnancy mode commands (English & Spanish)
+                if (command.includes('kick') || command.includes('movement') || command.includes('move') ||
+                    command.includes('patada') || command.includes('patadita') || command.includes('movimiento')) {
                     recordKick();
                     speak('Kick recorded');
-                } else if (command.includes('start session') || command.includes('start counting')) {
+                } else if (command.includes('start session') || command.includes('start counting') ||
+                          command.includes('iniciar sesión') || command.includes('empezar contar')) {
                     startKickSession();
                     speak('Counting session started');
-                } else if (command.includes('end session') || command.includes('stop counting')) {
+                } else if (command.includes('end session') || command.includes('stop counting') ||
+                          command.includes('terminar sesión') || command.includes('parar contar')) {
                     endKickSession();
                     speak('Session ended');
-                } else if (command.includes('how many')) {
+                } else if (command.includes('how many') || command.includes('cuántas') || command.includes('cuantas')) {
                     const today = new Date().toDateString();
                     const todayKicks = kicks.filter(k => 
                         new Date(k.timestamp).toDateString() === today
@@ -2094,25 +2224,37 @@
                     speak(`${todayKicks.length} kicks today`);
                 }
             } else {
-                // Baby mode commands
-                if (command.includes('left') && (command.includes('feed') || command.includes('side') || command.includes('breast'))) {
+                // Baby mode commands (English & Spanish)
+                if ((command.includes('left') || command.includes('izquierda') || command.includes('izquierdo')) && 
+                    (command.includes('feed') || command.includes('side') || command.includes('breast') || 
+                     command.includes('pecho') || command.includes('lado') || command.includes('amamantar'))) {
                     recordFeeding('left');
                     speak('Started left side feeding');
-                } else if (command.includes('right') && (command.includes('feed') || command.includes('side') || command.includes('breast'))) {
+                } else if ((command.includes('right') || command.includes('derecha') || command.includes('derecho')) && 
+                          (command.includes('feed') || command.includes('side') || command.includes('breast') ||
+                           command.includes('pecho') || command.includes('lado') || command.includes('amamantar'))) {
                     recordFeeding('right');
                     speak('Started right side feeding');
-                } else if (command.includes('poop') || command.includes('poopy')) {
+                } else if (command.includes('poop') || command.includes('poopy') || 
+                          command.includes('popó') || command.includes('popo') || command.includes('caca')) {
                     recordDiaper('poop');
                     speak('Poop diaper recorded');
-                } else if (command.includes('pee') || command.includes('wet')) {
+                } else if (command.includes('pee') || command.includes('wet') || 
+                          command.includes('pipí') || command.includes('pipi') || command.includes('orina')) {
                     recordDiaper('pee');
                     speak('Wet diaper recorded');
-                } else if ((command.includes('sleep') || command.includes('nap')) && command.includes('start')) {
+                } else if ((command.includes('sleep') || command.includes('nap') || 
+                           command.includes('dormir') || command.includes('siesta')) && 
+                          (command.includes('start') || command.includes('empezar') || command.includes('iniciar'))) {
                     recordSleep('start');
                     speak('Sleep started');
-                } else if (command.includes('wake') || command.includes('awake')) {
+                } else if (command.includes('wake') || command.includes('awake') || 
+                          command.includes('despertar') || command.includes('despierto')) {
                     recordSleep('end');
                     speak('Baby is awake');
+                } else if (command.includes('schedule') || command.includes('horario') || 
+                          command.includes('next feeding') || command.includes('próxima')) {
+                    checkNextFeeding();
                 }
             }
         }
@@ -2159,6 +2301,118 @@
             }
             
             updateLastTimes();
+            updateNextFeeding();
+        }
+        
+        // Feeding Schedule Functions
+        function updateNextFeeding() {
+            if (currentMode !== 'baby') return;
+            
+            const interval = parseInt(localStorage.getItem('feedingInterval') || '3');
+            if (interval === 0) {
+                document.getElementById('nextFeedingTime').textContent = 'On Demand';
+                return;
+            }
+            
+            const lastFeed = activities.find(a => a.type === 'feeding');
+            if (!lastFeed) {
+                document.getElementById('nextFeedingTime').textContent = 'No Data';
+                return;
+            }
+            
+            const nextFeedTime = new Date(lastFeed.timestamp + (interval * 60 * 60 * 1000));
+            const now = new Date();
+            const diff = nextFeedTime - now;
+            
+            if (diff <= 0) {
+                document.getElementById('nextFeedingTime').textContent = 'Now!';
+                document.getElementById('nextFeedingTime').style.color = 'var(--danger)';
+                
+                // Check if we should notify
+                const lastNotification = localStorage.getItem('lastFeedingNotification');
+                if (!lastNotification || Date.now() - parseInt(lastNotification) > 300000) { // 5 min cooldown
+                    showToast('🍼 Time for feeding!', 'warning');
+                    speak('Time for feeding');
+                    localStorage.setItem('lastFeedingNotification', Date.now().toString());
+                }
+            } else {
+                const hours = Math.floor(diff / (1000 * 60 * 60));
+                const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+                document.getElementById('nextFeedingTime').textContent = `${hours}:${String(minutes).padStart(2, '0')}`;
+                document.getElementById('nextFeedingTime').style.color = 'var(--primary)';
+            }
+        }
+        
+        function updateFeedingInterval() {
+            const interval = document.getElementById('feedingInterval').value;
+            localStorage.setItem('feedingInterval', interval);
+            updateNextFeeding();
+            showToast(`Feeding interval updated to ${interval === '0' ? 'on demand' : `every ${interval} hours`}`, 'success');
+        }
+        
+        function checkNextFeeding() {
+            const interval = parseInt(localStorage.getItem('feedingInterval') || '3');
+            const lastFeed = activities.find(a => a.type === 'feeding');
+            
+            if (!lastFeed) {
+                speak('No feeding data yet');
+                return;
+            }
+            
+            if (interval === 0) {
+                speak('Feeding is on demand, no schedule');
+                return;
+            }
+            
+            const nextFeedTime = new Date(lastFeed.timestamp + (interval * 60 * 60 * 1000));
+            const now = new Date();
+            const diff = nextFeedTime - now;
+            
+            if (diff <= 0) {
+                speak('Time for feeding now');
+            } else {
+                const hours = Math.floor(diff / (1000 * 60 * 60));
+                const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+                speak(`Next feeding in ${hours} hours and ${minutes} minutes`);
+            }
+        }
+        
+        // Delete functions
+        function deleteActivity(id) {
+            if (confirm('Delete this entry?')) {
+                if (activitiesRef && id.startsWith('-')) {
+                    // Firebase ID
+                    activitiesRef.child(id).remove();
+                } else {
+                    // Local storage
+                    activities = activities.filter(a => a.id !== id);
+                    saveLocalData();
+                    updateStats();
+                    renderActivityLog();
+                }
+                showToast('Entry deleted', 'info');
+            }
+        }
+        
+        function deleteKickActivity(id) {
+            if (confirm('Delete this entry?')) {
+                if (kicksRef && id.startsWith('-')) {
+                    // Firebase ID
+                    kicksRef.child(id).remove();
+                } else {
+                    // Local storage - using timestamp as ID for kicks
+                    kicks = kicks.filter(k => k.id !== id && k.timestamp !== parseInt(id));
+                    saveLocalKicks();
+                    updateKickStats();
+                    renderMovementPattern();
+                    renderPregnancyLog();
+                    
+                    // Also check if it's a note
+                    activities = activities.filter(a => a.id !== id && a.timestamp !== parseInt(id));
+                    saveLocalData();
+                }
+                showToast('Entry deleted', 'info');
+            }
         }
         
         function updateLastTimes() {
@@ -2248,6 +2502,7 @@
                             </div>
                             <div class="log-time">${time} ${details ? '• ' + details : ''}</div>
                         </div>
+                        <button class="log-delete" onclick="deleteActivity('${activity.id}')">✕</button>
                     </div>
                 `;
             }).join('');
