@@ -254,6 +254,35 @@
             box-shadow: var(--shadow);
         }
 
+        .session-info {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 15px;
+            padding: 15px;
+            background: var(--accent);
+            border-radius: 12px;
+        }
+
+        .session-stat {
+            text-align: center;
+        }
+
+        .session-label {
+            display: block;
+            font-size: 11px;
+            color: var(--text-light);
+            text-transform: uppercase;
+            margin-bottom: 5px;
+        }
+
+        .session-value {
+            display: block;
+            font-size: 24px;
+            font-weight: bold;
+            color: var(--primary);
+        }
+
         .session-timer {
             font-size: 28px;
             font-weight: bold;
@@ -1202,6 +1231,16 @@
                 <div class="section-title">
                     <span>⏱️</span> Counting Session
                 </div>
+                <div class="session-info">
+                    <div class="session-stat">
+                        <span class="session-label">Session Kicks:</span>
+                        <span class="session-value" id="sessionKicks">0</span>
+                    </div>
+                    <div class="session-stat">
+                        <span class="session-label">Today Total:</span>
+                        <span class="session-value" id="sessionTodayTotal">0</span>
+                    </div>
+                </div>
                 <div class="session-timer" id="sessionTimer">00:00</div>
                 <div class="session-controls">
                     <button class="session-btn session-start" onclick="startKickSession()">
@@ -1210,6 +1249,9 @@
                     <button class="session-btn session-stop" onclick="endKickSession()">
                         End Session
                     </button>
+                </div>
+                <div class="session-note" style="margin-top: 10px; font-size: 12px; color: var(--text-light); text-align: center;">
+                    💡 Start a session to count kicks during a specific period (like after meals)
                 </div>
             </div>
 
@@ -1456,36 +1498,63 @@
         
         // TODO: Replace with your Firebase config
         const firebaseConfig = {
-            apiKey: "YOUR_API_KEY",
-            authDomain: "YOUR_AUTH_DOMAIN",
-            databaseURL: "YOUR_DATABASE_URL",
-            projectId: "YOUR_PROJECT_ID",
-            storageBucket: "YOUR_STORAGE_BUCKET",
-            messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-            appId: "YOUR_APP_ID"
-        };
+  apiKey: "AIzaSyCOyRtkQfHK593CfOwQe33on5mUEPYduEc",
+  authDomain: "avi-tracker.firebaseapp.com",
+  databaseURL: "https://avi-tracker-default-rtdb.firebaseio.com",
+  projectId: "avi-tracker",
+  storageBucket: "avi-tracker.firebasestorage.app",
+  messagingSenderId: "783062575404",
+  appId: "1:783062575404:web:2ce2e7812bec4b2d4ee489"
+};
 
         // Initialize Firebase
-        let database;
-        let activitiesRef;
-        let kicksRef;
+        let database = null;
+        let activitiesRef = null;
+        let kicksRef = null;
         let isOnline = false;
+        let firebaseConnected = false;
         
-        try {
-            firebase.initializeApp(firebaseConfig);
-            database = firebase.database();
-            activitiesRef = database.ref('activities');
-            kicksRef = database.ref('kicks');
-            
-            // Monitor connection status
-            const connectedRef = database.ref('.info/connected');
-            connectedRef.on('value', (snap) => {
-                isOnline = snap.val() === true;
-                updateConnectionStatus(isOnline);
-            });
-        } catch (error) {
-            console.error('Firebase initialization error:', error);
-            showToast('⚠️ Offline mode - data won\'t sync', 'warning');
+        // Check if Firebase config is properly set
+        if (firebaseConfig.apiKey && firebaseConfig.apiKey !== "YOUR_API_KEY") {
+            try {
+                firebase.initializeApp(firebaseConfig);
+                database = firebase.database();
+                activitiesRef = database.ref('activities');
+                kicksRef = database.ref('kicks');
+                
+                // Test write to verify Firebase is working
+                database.ref('.info/connected').on('value', (snap) => {
+                    isOnline = snap.val() === true;
+                    if (isOnline && !firebaseConnected) {
+                        firebaseConnected = true;
+                        console.log('✅ Firebase connected and working!');
+                        showToast('☁️ Connected to cloud sync!', 'success');
+                        
+                        // Test write permission
+                        database.ref('connectionTest').set({
+                            timestamp: Date.now(),
+                            user: currentUser.name || 'test'
+                        }).then(() => {
+                            console.log('✅ Firebase write test successful');
+                        }).catch((error) => {
+                            console.error('❌ Firebase write failed:', error);
+                            showToast('⚠️ Cloud sync issue - check Firebase rules', 'warning');
+                        });
+                    }
+                    updateConnectionStatus(isOnline);
+                });
+                
+            } catch (error) {
+                console.error('Firebase initialization error:', error);
+                showToast('⚠️ Firebase error - using local storage', 'warning');
+                database = null;
+                activitiesRef = null;
+                kicksRef = null;
+            }
+        } else {
+            console.warn('⚠️ Firebase not configured - using local storage only');
+            console.warn('To enable sync: Replace firebaseConfig with your actual Firebase configuration');
+            showToast('📱 Local storage mode - no sync between devices', 'info');
         }
 
         // ==========================================
@@ -1634,24 +1703,50 @@
             setTimeout(() => btn.classList.remove('pulse'), 500);
             
             // Save kick
-            if (kicksRef) {
-                const newRef = kicksRef.push();
-                kick.id = newRef.key;
-                newRef.set(kick);
+            if (kicksRef && database) {
+                try {
+                    const newRef = kicksRef.push();
+                    kick.id = newRef.key;
+                    newRef.set(kick)
+                        .then(() => {
+                            console.log('✅ Kick saved to Firebase');
+                        })
+                        .catch((error) => {
+                            console.error('❌ Firebase kick save failed:', error);
+                            showToast('⚠️ Sync failed - saved locally', 'warning');
+                            // Fall back to local storage
+                            kick.id = Date.now().toString();
+                            kicks.push(kick);
+                            saveLocalKicks();
+                            updateKickStats();
+                            renderMovementPattern();
+                            renderPregnancyLog();
+                        });
+                } catch (error) {
+                    console.error('Error saving kick:', error);
+                    kick.id = Date.now().toString();
+                    kicks.push(kick);
+                    saveLocalKicks();
+                    updateKickStats();
+                    renderMovementPattern();
+                    renderPregnancyLog();
+                }
             } else {
+                // No Firebase - use local storage
                 kick.id = Date.now().toString();
                 kicks.push(kick);
                 saveLocalKicks();
+                updateKickStats();
+                renderMovementPattern();
+                renderPregnancyLog();
+                console.log('📱 Kick saved locally (Firebase not available)');
             }
             
             // Update session if active
             if (kickSession.active) {
                 kickSession.kicks++;
+                document.getElementById('sessionKicks').textContent = kickSession.kicks;
             }
-            
-            updateKickStats();
-            renderMovementPattern();
-            renderPregnancyLog();
             
             showToast('👣 Kick recorded!', 'success');
             playSound();
@@ -1663,6 +1758,7 @@
                 startTime: Date.now(),
                 kicks: 0
             };
+            document.getElementById('sessionKicks').textContent = '0';
             showToast('⏱️ Counting session started', 'info');
         }
         
@@ -1687,6 +1783,9 @@
                     startTime: null,
                     kicks: 0
                 };
+                
+                document.getElementById('sessionKicks').textContent = '0';
+                document.getElementById('sessionTimer').textContent = '00:00';
             }
         }
         
@@ -1697,22 +1796,30 @@
             );
             
             // Today's total
-            document.getElementById('kickCount').textContent = todayKicks.length;
+            const totalToday = todayKicks.length;
+            document.getElementById('kickCount').textContent = totalToday;
+            
+            // Update session display with today's total
+            if (document.getElementById('sessionTodayTotal')) {
+                document.getElementById('sessionTodayTotal').textContent = totalToday;
+            }
             
             // Last hour
             const oneHourAgo = Date.now() - (60 * 60 * 1000);
             const lastHourKicks = todayKicks.filter(k => k.timestamp > oneHourAgo);
             document.getElementById('lastHourKicks').textContent = lastHourKicks.length;
             
-            // Session kicks
-            document.getElementById('sessionKicks').textContent = kickSession.kicks;
+            // Session kicks (keep current value if session is active)
+            if (!kickSession.active) {
+                document.getElementById('sessionKicks').textContent = '0';
+            }
             
             // Daily goal (typically 10 kicks in 2 hours)
             const goal = 10;
-            document.getElementById('dailyGoal').textContent = `${Math.min(todayKicks.length, goal)}/${goal}`;
+            document.getElementById('dailyGoal').textContent = `${Math.min(totalToday, goal)}/${goal}`;
             
             // Check if goal reached
-            if (todayKicks.length === goal) {
+            if (totalToday === goal) {
                 const alreadyNotified = localStorage.getItem('goalNotified_' + today);
                 if (!alreadyNotified) {
                     showToast('🎉 Daily kick goal reached!', 'success');
@@ -1992,16 +2099,41 @@
         }
         
         function saveActivity(activity) {
-            if (activitiesRef) {
-                const newRef = activitiesRef.push();
-                activity.id = newRef.key;
-                newRef.set(activity);
+            if (activitiesRef && database) {
+                try {
+                    const newRef = activitiesRef.push();
+                    activity.id = newRef.key;
+                    newRef.set(activity)
+                        .then(() => {
+                            console.log('✅ Activity saved to Firebase:', activity.type);
+                        })
+                        .catch((error) => {
+                            console.error('❌ Firebase save failed:', error);
+                            showToast('⚠️ Sync failed - saved locally', 'warning');
+                            // Fall back to local storage
+                            activity.id = Date.now().toString();
+                            activities.unshift(activity);
+                            saveLocalData();
+                            updateStats();
+                            renderActivityLog();
+                        });
+                } catch (error) {
+                    console.error('Error saving to Firebase:', error);
+                    // Fall back to local storage
+                    activity.id = Date.now().toString();
+                    activities.unshift(activity);
+                    saveLocalData();
+                    updateStats();
+                    renderActivityLog();
+                }
             } else {
+                // No Firebase - use local storage
                 activity.id = Date.now().toString();
                 activities.unshift(activity);
                 saveLocalData();
                 updateStats();
                 renderActivityLog();
+                console.log('📱 Saved locally (Firebase not available)');
             }
         }
         
@@ -2202,21 +2334,26 @@
         function processVoiceCommand(command) {
             console.log('Processing command:', command);
             
+            // Make command processing more forgiving
+            command = command.toLowerCase().trim();
+            
             if (currentMode === 'pregnancy') {
                 // Pregnancy mode commands (English & Spanish)
                 if (command.includes('kick') || command.includes('movement') || command.includes('move') ||
-                    command.includes('patada') || command.includes('patadita') || command.includes('movimiento')) {
+                    command.includes('patada') || command.includes('patad') || command.includes('movimiento') || 
+                    command.includes('movi') || command.includes('bebé') || command.includes('bebe')) {
                     recordKick();
                     speak('Kick recorded');
-                } else if (command.includes('start session') || command.includes('start counting') ||
-                          command.includes('iniciar sesión') || command.includes('empezar contar')) {
+                } else if (command.includes('start') || command.includes('begin') ||
+                          command.includes('iniciar') || command.includes('empezar') || command.includes('comenzar')) {
                     startKickSession();
                     speak('Counting session started');
-                } else if (command.includes('end session') || command.includes('stop counting') ||
-                          command.includes('terminar sesión') || command.includes('parar contar')) {
+                } else if (command.includes('end') || command.includes('stop') || command.includes('finish') ||
+                          command.includes('terminar') || command.includes('parar') || command.includes('fin')) {
                     endKickSession();
                     speak('Session ended');
-                } else if (command.includes('how many') || command.includes('cuántas') || command.includes('cuantas')) {
+                } else if (command.includes('how many') || command.includes('count') ||
+                          command.includes('cuánt') || command.includes('cuant')) {
                     const today = new Date().toDateString();
                     const todayKicks = kicks.filter(k => 
                         new Date(k.timestamp).toDateString() === today
@@ -2224,36 +2361,68 @@
                     speak(`${todayKicks.length} kicks today`);
                 }
             } else {
-                // Baby mode commands (English & Spanish)
-                if ((command.includes('left') || command.includes('izquierda') || command.includes('izquierdo')) && 
+                // Baby mode commands (English & Spanish) - more forgiving
+                // LEFT feeding
+                if ((command.includes('left') || command.includes('izq')) && 
                     (command.includes('feed') || command.includes('side') || command.includes('breast') || 
-                     command.includes('pecho') || command.includes('lado') || command.includes('amamantar'))) {
+                     command.includes('pecho') || command.includes('lado') || command.includes('mama') ||
+                     command.includes('lech') || command.includes('com'))) {
                     recordFeeding('left');
                     speak('Started left side feeding');
-                } else if ((command.includes('right') || command.includes('derecha') || command.includes('derecho')) && 
+                } 
+                // RIGHT feeding  
+                else if ((command.includes('right') || command.includes('derech') || command.includes('derech')) && 
                           (command.includes('feed') || command.includes('side') || command.includes('breast') ||
-                           command.includes('pecho') || command.includes('lado') || command.includes('amamantar'))) {
+                           command.includes('pecho') || command.includes('lado') || command.includes('mama') ||
+                           command.includes('lech') || command.includes('com'))) {
                     recordFeeding('right');
                     speak('Started right side feeding');
-                } else if (command.includes('poop') || command.includes('poopy') || 
-                          command.includes('popó') || command.includes('popo') || command.includes('caca')) {
+                }
+                // Simple left/right if clearly said
+                else if (command === 'left' || command === 'izquierda' || command === 'izquierdo') {
+                    recordFeeding('left');
+                    speak('Started left side feeding');
+                }
+                else if (command === 'right' || command === 'derecha' || command === 'derecho') {
+                    recordFeeding('right');
+                    speak('Started right side feeding');
+                }
+                // POOP
+                else if (command.includes('poop') || command.includes('poo') || 
+                          command.includes('popó') || command.includes('popo') || 
+                          command.includes('caca') || command.includes('kaka') ||
+                          command.includes('sucio') || command.includes('número dos') ||
+                          command.includes('numero dos') || command.includes('two')) {
                     recordDiaper('poop');
                     speak('Poop diaper recorded');
-                } else if (command.includes('pee') || command.includes('wet') || 
-                          command.includes('pipí') || command.includes('pipi') || command.includes('orina')) {
+                }
+                // PEE
+                else if (command.includes('pee') || command.includes('wet') || command.includes('wee') ||
+                          command.includes('pipí') || command.includes('pipi') || 
+                          command.includes('pis') || command.includes('orin') ||
+                          command.includes('mojado') || command.includes('número uno') ||
+                          command.includes('numero uno') || command.includes('one')) {
                     recordDiaper('pee');
                     speak('Wet diaper recorded');
-                } else if ((command.includes('sleep') || command.includes('nap') || 
-                           command.includes('dormir') || command.includes('siesta')) && 
-                          (command.includes('start') || command.includes('empezar') || command.includes('iniciar'))) {
+                }
+                // SLEEP
+                else if ((command.includes('sleep') || command.includes('nap') || 
+                           command.includes('dorm') || command.includes('siest') ||
+                           command.includes('sueñ') || command.includes('descan')) && 
+                          !command.includes('wake') && !command.includes('despert')) {
                     recordSleep('start');
                     speak('Sleep started');
-                } else if (command.includes('wake') || command.includes('awake') || 
-                          command.includes('despertar') || command.includes('despierto')) {
+                }
+                // WAKE
+                else if (command.includes('wake') || command.includes('awake') || command.includes('up') ||
+                          command.includes('despert') || command.includes('levant')) {
                     recordSleep('end');
                     speak('Baby is awake');
-                } else if (command.includes('schedule') || command.includes('horario') || 
-                          command.includes('next feeding') || command.includes('próxima')) {
+                }
+                // SCHEDULE
+                else if (command.includes('schedule') || command.includes('next') || 
+                          command.includes('horario') || command.includes('próx') || 
+                          command.includes('prox') || command.includes('cuando')) {
                     checkNextFeeding();
                 }
             }
