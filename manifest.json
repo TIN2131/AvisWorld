@@ -2,7 +2,7 @@
   "name": "Avi's Journey Tracker",
   "short_name": "Avi Tracker",
   "description": "Track pregnancy kicks and baby care",
-  "start_url": "/index.html",
+  "start_url": "/AvisWorld/index.html",
   "display": "standalone",
   "background_color": "#f9f5fc",
   "theme_color": "#9b7bb8",
