@@ -1,0 +1,3003 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Avi's Journey - Ultimate Tracker</title>
+    <link rel="manifest" href="manifest.json">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="Avi Tracker">
+    <meta name="theme-color" content="#9b7bb8">
+    
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+    
+    <!-- Chart.js for Analytics -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- jsPDF for PDF exports -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        :root {
+            --primary: #9b7bb8;
+            --primary-light: #c8b6db;
+            --primary-dark: #7a5a99;
+            --accent: #e6d7f3;
+            --background: #f9f5fc;
+            --card-bg: #ffffff;
+            --text: #4a4a4a;
+            --text-light: #8a8a8a;
+            --success: #8bc34a;
+            --warning: #ffc107;
+            --info: #64b5f6;
+            --danger: #f44336;
+            --pink: #ff6b9d;
+            --blue: #4dabf7;
+            --shadow: 0 4px 6px rgba(155, 123, 184, 0.1);
+            --shadow-lg: 0 10px 25px rgba(155, 123, 184, 0.15);
+            --mom-color: #ff6b9d;
+            --dad-color: #4dabf7;
+            --pregnancy-color: #fec5e5;
+            --feeding-color: #87ceeb;
+            --diaper-pee: #ffe8a1;
+            --diaper-poop: #d4a373;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: linear-gradient(135deg, var(--background) 0%, #f0e6f7 100%);
+            color: var(--text);
+            min-height: 100vh;
+            overflow-x: hidden;
+            padding-bottom: 70px;
+        }
+
+        body.dark-mode {
+            --background: #1a1a2e;
+            --card-bg: #16213e;
+            --text: #e0e0e0;
+            --text-light: #a0a0a0;
+            --accent: #3a3a5e;
+            background: linear-gradient(135deg, #1a1a2e 0%, #0f0f1e 100%);
+        }
+
+        .container {
+            max-width: 480px;
+            margin: 0 auto;
+            padding: 20px;
+            padding-bottom: 100px;
+        }
+
+        /* Setup Modal */
+        .setup-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+        }
+
+        .setup-content {
+            background: var(--card-bg);
+            padding: 30px;
+            border-radius: 20px;
+            max-width: 400px;
+            width: 90%;
+            text-align: center;
+            animation: fadeIn 0.5s ease;
+        }
+
+        /* Bottom Navigation */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: var(--card-bg);
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            padding: 8px 0;
+            z-index: 900;
+        }
+
+        .nav-item {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            color: var(--text-light);
+        }
+
+        .nav-item.active {
+            color: var(--primary);
+        }
+
+        .nav-item .icon {
+            font-size: 24px;
+            margin-bottom: 4px;
+        }
+
+        .nav-item .label {
+            font-size: 11px;
+            font-weight: 600;
+        }
+
+        /* Tab Content */
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Header */
+        .header {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: white;
+            padding: 20px 20px 25px;
+            margin: -20px -20px 20px -20px;
+            text-align: center;
+            border-radius: 0 0 30px 30px;
+            box-shadow: var(--shadow-lg);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .header::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+            animation: float 20s infinite ease-in-out;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translate(0, 0) rotate(0deg); }
+            50% { transform: translate(-30px, -30px) rotate(180deg); }
+        }
+
+        .header h1 {
+            font-size: 24px;
+            margin-bottom: 5px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .header .subtitle {
+            opacity: 0.9;
+            font-size: 12px;
+            position: relative;
+            z-index: 1;
+            margin-bottom: 15px;
+        }
+
+        .baby-icon {
+            font-size: 32px;
+            margin-bottom: 8px;
+        }
+
+        /* Mode Switcher */
+        .mode-switcher {
+            display: flex;
+            background: rgba(255,255,255,0.2);
+            border-radius: 25px;
+            padding: 4px;
+            position: relative;
+            z-index: 2;
+            margin: 0 auto;
+            width: fit-content;
+        }
+
+        .mode-btn {
+            padding: 8px 20px;
+            border: none;
+            background: transparent;
+            color: rgba(255,255,255,0.8);
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .mode-btn.active {
+            background: white;
+            color: var(--primary-dark);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        /* Affirmation Card */
+        .affirmation-card {
+            background: linear-gradient(135deg, var(--primary-light) 0%, var(--primary) 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 20px;
+            margin-bottom: 20px;
+            text-align: center;
+            box-shadow: var(--shadow-lg);
+        }
+
+        .affirmation-text {
+            font-size: 16px;
+            font-style: italic;
+            margin-bottom: 10px;
+        }
+
+        .affirmation-author {
+            font-size: 12px;
+            opacity: 0.9;
+        }
+
+        /* Mode Content Display */
+        .pregnancy-mode-content {
+            display: none;
+        }
+
+        .baby-mode-content {
+            display: none;
+        }
+
+        body.pregnancy-mode .pregnancy-mode-content {
+            display: block;
+        }
+
+        body.baby-mode .baby-mode-content {
+            display: block;
+        }
+
+        /* Kick Counter */
+        .kick-counter-card {
+            background: var(--card-bg);
+            border-radius: 25px;
+            padding: 25px;
+            box-shadow: var(--shadow-lg);
+            text-align: center;
+            margin-bottom: 20px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .kick-count-display {
+            font-size: 72px;
+            font-weight: bold;
+            color: var(--pregnancy-color);
+            line-height: 1;
+            margin-bottom: 10px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .kick-btn {
+            width: 150px;
+            height: 150px;
+            border-radius: 50%;
+            border: none;
+            background: linear-gradient(135deg, var(--pregnancy-color) 0%, #ff9ece 100%);
+            color: white;
+            font-size: 60px;
+            cursor: pointer;
+            box-shadow: 0 8px 25px rgba(254, 197, 229, 0.4);
+            transition: all 0.3s ease;
+            position: relative;
+            margin: 20px auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .kick-btn:active {
+            transform: scale(0.95);
+        }
+
+        .kick-btn.pulse {
+            animation: kickPulse 0.5s ease;
+        }
+
+        @keyframes kickPulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+
+        /* Session Info */
+        .session-info {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 15px;
+            padding: 15px;
+            background: var(--accent);
+            border-radius: 12px;
+        }
+
+        .session-stat {
+            text-align: center;
+        }
+
+        .session-label {
+            display: block;
+            font-size: 11px;
+            color: var(--text-light);
+            text-transform: uppercase;
+            margin-bottom: 5px;
+        }
+
+        .session-value {
+            display: block;
+            font-size: 24px;
+            font-weight: bold;
+            color: var(--primary);
+        }
+
+        .session-timer {
+            font-size: 28px;
+            font-weight: bold;
+            color: var(--primary);
+            text-align: center;
+            margin-bottom: 15px;
+            font-family: 'Courier New', monospace;
+        }
+
+        /* Feeding Timer Card */
+        .feeding-timer-card {
+            background: var(--card-bg);
+            border-radius: 20px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: var(--shadow);
+        }
+
+        .feeding-timer-display {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .feeding-side {
+            text-align: center;
+            padding: 15px;
+            background: var(--accent);
+            border-radius: 15px;
+        }
+
+        .feeding-side.active {
+            background: linear-gradient(135deg, var(--feeding-color) 0%, #6bb6d6 100%);
+            color: white;
+        }
+
+        .feeding-side-label {
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+
+        .feeding-side-timer {
+            font-size: 24px;
+            font-weight: bold;
+            font-family: 'Courier New', monospace;
+        }
+
+        .feeding-controls {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        /* Analytics Card */
+        .analytics-card {
+            background: var(--card-bg);
+            border-radius: 20px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: var(--shadow);
+        }
+
+        .chart-container {
+            position: relative;
+            height: 200px;
+            margin-top: 15px;
+        }
+
+        .period-selector {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .period-btn {
+            padding: 6px 16px;
+            border: none;
+            border-radius: 20px;
+            background: var(--accent);
+            color: var(--primary-dark);
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .period-btn.active {
+            background: var(--primary);
+            color: white;
+        }
+
+        /* Quick Stats */
+        .stats-overview {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            margin-bottom: 25px;
+        }
+
+        .stat-card {
+            background: var(--card-bg);
+            padding: 15px;
+            border-radius: 15px;
+            box-shadow: var(--shadow);
+            text-align: center;
+            transition: transform 0.2s, box-shadow 0.2s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .stat-card.feeding {
+            background: linear-gradient(135deg, var(--feeding-color) 0%, #6bb6d6 100%);
+            color: white;
+        }
+
+        .stat-card.diaper-pee {
+            background: linear-gradient(135deg, var(--diaper-pee) 0%, #ffd700 100%);
+        }
+
+        .stat-card.diaper-poop {
+            background: linear-gradient(135deg, var(--diaper-poop) 0%, #b8956a 100%);
+            color: white;
+        }
+
+        .stat-value {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        /* Activity Log */
+        .activity-log {
+            background: var(--card-bg);
+            border-radius: 20px;
+            padding: 20px;
+            box-shadow: var(--shadow);
+            margin-top: 25px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .log-tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .log-tab {
+            flex: 1;
+            padding: 8px;
+            border: none;
+            background: var(--accent);
+            border-radius: 10px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .log-tab.active {
+            background: var(--primary);
+            color: white;
+        }
+
+        .log-content {
+            display: none;
+        }
+
+        .log-content.active {
+            display: block;
+        }
+
+        .log-item {
+            display: flex;
+            align-items: center;
+            padding: 12px;
+            margin-bottom: 8px;
+            background: var(--background);
+            border-radius: 12px;
+            transition: all 0.3s ease;
+            animation: slideIn 0.3s ease;
+        }
+
+        .log-icon {
+            font-size: 20px;
+            margin-right: 12px;
+            width: 30px;
+            text-align: center;
+        }
+
+        .log-details {
+            flex: 1;
+        }
+
+        .log-delete {
+            background: none;
+            border: none;
+            color: var(--text-light);
+            cursor: pointer;
+            padding: 5px;
+            font-size: 18px;
+            transition: color 0.3s ease;
+        }
+
+        .log-delete:hover {
+            color: #e74c3c;
+        }
+
+        /* Parent Badge */
+        .parent-badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 10px;
+            margin-left: 8px;
+            font-weight: 600;
+        }
+
+        .parent-badge.mom {
+            background: var(--mom-color);
+            color: white;
+        }
+
+        .parent-badge.dad {
+            background: var(--dad-color);
+            color: white;
+        }
+
+        /* Buttons */
+        .btn {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 12px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: white;
+        }
+
+        .btn-feeding {
+            background: linear-gradient(135deg, var(--feeding-color) 0%, #6bb6d6 100%);
+            color: white;
+        }
+
+        /* Toast */
+        .toast {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%) translateY(-100px);
+            background: var(--primary);
+            color: white;
+            padding: 15px 25px;
+            border-radius: 50px;
+            box-shadow: var(--shadow-lg);
+            z-index: 1000;
+            opacity: 0;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .toast.show {
+            transform: translateX(-50%) translateY(0);
+            opacity: 1;
+        }
+
+        /* Connection Status */
+        .connection-status {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            padding: 5px 10px;
+            background: var(--card-bg);
+            border-radius: 20px;
+            font-size: 11px;
+            box-shadow: var(--shadow);
+            z-index: 100;
+        }
+
+        .connection-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--success);
+            animation: pulse-dot 2s infinite;
+        }
+
+        @keyframes pulse-dot {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        /* Voice Control FAB */
+        .voice-control-fab {
+            position: fixed;
+            bottom: 80px;
+            right: 20px;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: white;
+            border: none;
+            box-shadow: var(--shadow-lg);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            z-index: 899;
+            transition: all 0.3s ease;
+        }
+
+        .voice-control-fab.listening {
+            background: linear-gradient(135deg, var(--danger) 0%, #c62828 100%);
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(244, 67, 54, 0.4); }
+            70% { box-shadow: 0 0 0 20px rgba(244, 67, 54, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(244, 67, 54, 0); }
+        }
+
+        /* Photo Grid */
+        .photo-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .photo-thumb {
+            aspect-ratio: 1;
+            border-radius: 10px;
+            overflow: hidden;
+            cursor: pointer;
+            transition: transform 0.3s ease;
+            box-shadow: var(--shadow);
+        }
+
+        .photo-thumb:hover {
+            transform: scale(1.05);
+        }
+
+        .photo-thumb img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        /* Photo Viewer */
+        .photo-viewer {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.9);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1500;
+            cursor: pointer;
+        }
+
+        .photo-viewer img {
+            max-width: 90%;
+            max-height: 90%;
+            border-radius: 10px;
+        }
+
+        /* Message Bubble */
+        .message-bubble {
+            padding: 12px 16px;
+            border-radius: 20px;
+            margin-bottom: 10px;
+            max-width: 80%;
+            animation: slideIn 0.3s ease;
+        }
+
+        .message-bubble.from-me {
+            background: var(--primary-light);
+            color: white;
+            margin-left: auto;
+            text-align: right;
+        }
+
+        .message-bubble.from-partner {
+            background: var(--accent);
+            color: var(--text);
+        }
+
+        /* Love Button */
+        .love-btn {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--pink) 0%, #ff4d7d 100%);
+            border: none;
+            color: white;
+            font-size: 40px;
+            cursor: pointer;
+            margin: 20px auto;
+            display: block;
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 20px rgba(255, 107, 157, 0.3);
+        }
+
+        .love-btn:active {
+            transform: scale(0.95);
+        }
+
+        .love-btn.pulse-animation {
+            animation: lovePulse 1s ease;
+        }
+
+        @keyframes lovePulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.2); }
+            100% { transform: scale(1); }
+        }
+
+        /* Loading */
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: var(--text-light);
+        }
+
+        /* Section Title */
+        .section-title {
+            font-size: 18px;
+            color: var(--primary-dark);
+            margin-bottom: 15px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* Message Card */
+        .message-card {
+            background: var(--card-bg);
+            border-radius: 20px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: var(--shadow);
+        }
+
+        .message-input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid var(--accent);
+            border-radius: 25px;
+            font-size: 14px;
+            margin-bottom: 10px;
+            resize: none;
+        }
+
+        /* Memory Card */
+        .memory-card {
+            background: var(--card-bg);
+            border-radius: 20px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: var(--shadow);
+        }
+
+        .photo-upload-btn {
+            width: 100%;
+            height: 200px;
+            border: 3px dashed var(--accent);
+            border-radius: 15px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: var(--background);
+        }
+
+        .photo-upload-btn:hover {
+            border-color: var(--primary);
+            background: var(--accent);
+        }
+
+        /* Milestone Item */
+        .milestone-item {
+            display: flex;
+            align-items: center;
+            padding: 15px;
+            background: var(--background);
+            border-radius: 15px;
+            margin-bottom: 15px;
+            box-shadow: var(--shadow);
+            position: relative;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .milestone-item:hover {
+            transform: translateX(5px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .milestone-icon {
+            font-size: 30px;
+            margin-right: 15px;
+        }
+
+        .milestone-details {
+            flex: 1;
+        }
+
+        .milestone-title {
+            font-weight: 600;
+            color: var(--primary-dark);
+            margin-bottom: 4px;
+        }
+
+        .milestone-date {
+            font-size: 12px;
+            color: var(--text-light);
+        }
+
+        /* Contraction Timer */
+        .contraction-timer {
+            background: var(--card-bg);
+            border-radius: 20px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: var(--shadow);
+            text-align: center;
+        }
+
+        .timer-display {
+            font-size: 36px;
+            font-weight: bold;
+            color: var(--primary);
+            font-family: 'Courier New', monospace;
+            margin: 20px 0;
+        }
+
+        /* Insight Grid */
+        .insight-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            margin-top: 15px;
+        }
+
+        .insight-item {
+            background: var(--accent);
+            padding: 12px;
+            border-radius: 12px;
+            text-align: center;
+        }
+
+        .insight-value {
+            font-size: 20px;
+            font-weight: bold;
+            color: var(--primary);
+            margin-bottom: 4px;
+        }
+
+        .insight-label {
+            font-size: 11px;
+            color: var(--text-light);
+            text-transform: uppercase;
+        }
+
+        /* Analytics Summary Cards */
+        .analytics-summary {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .summary-card {
+            background: var(--card-bg);
+            padding: 15px;
+            border-radius: 15px;
+            box-shadow: var(--shadow);
+            text-align: center;
+        }
+
+        .summary-icon {
+            font-size: 30px;
+            margin-bottom: 8px;
+        }
+
+        .summary-value {
+            font-size: 20px;
+            font-weight: bold;
+            color: var(--primary);
+            margin-bottom: 4px;
+        }
+
+        .summary-label {
+            font-size: 10px;
+            color: var(--text-light);
+            text-transform: uppercase;
+        }
+
+        /* PDF Export Button */
+        .export-section {
+            background: var(--card-bg);
+            border-radius: 20px;
+            padding: 20px;
+            margin-top: 20px;
+            box-shadow: var(--shadow);
+            text-align: center;
+        }
+
+        .export-btn {
+            background: linear-gradient(135deg, var(--success) 0%, #6ba644 100%);
+            color: white;
+            width: 100%;
+        }
+    </style>
+</head>
+<body class="pregnancy-mode">
+    <!-- User Setup Modal -->
+    <div id="setupModal" class="setup-modal" style="display: none;">
+        <div class="setup-content">
+            <h2 style="color: var(--primary); margin-bottom: 20px;">👶 Welcome to Avi's Tracker!</h2>
+            <p style="margin-bottom: 20px; color: var(--text-light);">Let's personalize your experience (one time only!)</p>
+            
+            <input type="text" id="setupName" placeholder="Your name (e.g., Tavo or Ingrid)" style="width: 100%; padding: 12px; border: 2px solid var(--accent); border-radius: 10px; margin-bottom: 20px; font-size: 16px;">
+            
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px;">
+                <button onclick="setupUser('mom')" class="btn" style="background: var(--mom-color); color: white;">
+                    👩 Mom
+                </button>
+                <button onclick="setupUser('dad')" class="btn" style="background: var(--dad-color); color: white;">
+                    👨 Dad
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <!-- Connection Status -->
+        <div class="connection-status" id="connectionStatus">
+            <div class="connection-dot"></div>
+            <span id="connectionText">Connected</span>
+        </div>
+
+        <!-- Header -->
+        <div class="header">
+            <div class="baby-icon" id="modeIcon">🤰</div>
+            <h1>Avi's Journey</h1>
+            <div class="subtitle" id="modeSubtitle">Every moment matters</div>
+            
+            <!-- Mode Switcher -->
+            <div class="mode-switcher">
+                <button class="mode-btn active" id="pregnancyModeBtn" onclick="switchMode('pregnancy')">
+                    <span>🤰</span>
+                    <span>Pregnancy</span>
+                </button>
+                <button class="mode-btn" id="babyModeBtn" onclick="switchMode('baby')">
+                    <span>👶</span>
+                    <span>Baby Care</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- HOME TAB -->
+        <div id="homeTab" class="tab-content active">
+            <!-- Daily Affirmation -->
+            <div class="affirmation-card">
+                <div class="affirmation-text" id="dailyAffirmation">
+                    "Every kick is a tiny hello from your little miracle."
+                </div>
+                <div class="affirmation-author">- For Ingrid & Tavo 💜</div>
+            </div>
+
+            <!-- PREGNANCY MODE HOME -->
+            <div class="pregnancy-mode-content">
+                <!-- Kick Counter -->
+                <div class="kick-counter-card">
+                    <div class="kick-count-display" id="kickCount">0</div>
+                    <div style="font-size: 14px; color: var(--text-light); margin-bottom: 20px;">Kicks Today</div>
+                    <button class="kick-btn" id="kickBtn" onclick="recordKick()">
+                        👣
+                    </button>
+                    <div style="font-size: 12px; color: var(--text-light); margin-top: 10px;">
+                        Tap when you feel movement
+                    </div>
+                </div>
+
+                <!-- Kick Session Timer -->
+                <div class="analytics-card">
+                    <div class="section-title">
+                        <span>⏱️</span> Counting Session
+                    </div>
+                    <div class="session-info">
+                        <div class="session-stat">
+                            <span class="session-label">Session Kicks:</span>
+                            <span class="session-value" id="sessionKicks">0</span>
+                        </div>
+                        <div class="session-stat">
+                            <span class="session-label">Today Total:</span>
+                            <span class="session-value" id="sessionTodayTotal">0</span>
+                        </div>
+                    </div>
+                    <div class="session-timer" id="sessionTimer">00:00</div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                        <button class="btn btn-primary" onclick="startKickSession()">Start Session</button>
+                        <button class="btn" style="background: var(--danger); color: white;" onclick="endKickSession()">End Session</button>
+                    </div>
+                </div>
+
+                <!-- Quick Stats -->
+                <div class="stats-overview">
+                    <div class="stat-card">
+                        <div class="stat-value" id="lastHourKicks">0</div>
+                        <div class="stat-label">Last Hour</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="dailyGoal">0/10</div>
+                        <div class="stat-label">Daily Goal</div>
+                    </div>
+                </div>
+
+                <!-- Today's Activity -->
+                <div class="activity-log">
+                    <div class="section-title">
+                        <span>📊</span> Recent Activity
+                    </div>
+                    <div id="pregnancyActivityLog" class="log-list">
+                        <div class="loading">No kicks recorded today</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- BABY MODE HOME -->
+            <div class="baby-mode-content">
+                <!-- Feeding Timer -->
+                <div class="feeding-timer-card">
+                    <div class="section-title">
+                        <span>🍼</span> Feeding Timer
+                    </div>
+                    <div class="feeding-timer-display">
+                        <div class="feeding-side" id="leftFeedingSide">
+                            <div class="feeding-side-label">Left Side</div>
+                            <div class="feeding-side-timer" id="leftFeedingTimer">00:00</div>
+                        </div>
+                        <div class="feeding-side" id="rightFeedingSide">
+                            <div class="feeding-side-label">Right Side</div>
+                            <div class="feeding-side-timer" id="rightFeedingTimer">00:00</div>
+                        </div>
+                    </div>
+                    <div class="feeding-controls">
+                        <button class="btn btn-feeding" onclick="toggleFeeding('left')">Start/Stop Left</button>
+                        <button class="btn btn-feeding" onclick="toggleFeeding('right')">Start/Stop Right</button>
+                    </div>
+                    <div style="margin-top: 15px; text-align: center; font-size: 12px; color: var(--text-light);">
+                        Total Today: <span id="totalFeedingTime" style="font-weight: bold;">0 min</span>
+                    </div>
+                </div>
+
+                <!-- Baby Stats Overview -->
+                <div class="analytics-summary">
+                    <div class="summary-card">
+                        <div class="summary-icon">🍼</div>
+                        <div class="summary-value" id="todayFeedings">0</div>
+                        <div class="summary-label">Feedings</div>
+                    </div>
+                    <div class="summary-card">
+                        <div class="summary-icon">💧</div>
+                        <div class="summary-value" id="todayPees">0</div>
+                        <div class="summary-label">Wet</div>
+                    </div>
+                    <div class="summary-card">
+                        <div class="summary-icon">💩</div>
+                        <div class="summary-value" id="todayPoops">0</div>
+                        <div class="summary-label">Dirty</div>
+                    </div>
+                </div>
+
+                <!-- Quick Actions -->
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 20px 0;">
+                    <button class="btn" style="background: var(--diaper-pee);" onclick="recordDiaper('pee')">💧 Wet Diaper</button>
+                    <button class="btn" style="background: var(--diaper-poop); color: white;" onclick="recordDiaper('poop')">💩 Dirty Diaper</button>
+                </div>
+
+                <!-- Tabbed Activity Logs -->
+                <div class="activity-log">
+                    <div class="section-title">
+                        <span>📊</span> Activity Logs
+                    </div>
+                    <div class="log-tabs">
+                        <button class="log-tab active" onclick="switchLogTab('feeding')">🍼 Feeding</button>
+                        <button class="log-tab" onclick="switchLogTab('diapers')">🚼 Diapers</button>
+                        <button class="log-tab" onclick="switchLogTab('all')">📋 All</button>
+                    </div>
+                    
+                    <div id="feedingLog" class="log-content active">
+                        <div class="loading">No feedings today</div>
+                    </div>
+                    
+                    <div id="diapersLog" class="log-content">
+                        <div class="loading">No diaper changes today</div>
+                    </div>
+                    
+                    <div id="allLog" class="log-content">
+                        <div class="loading">No activities today</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ANALYTICS TAB -->
+        <div id="analyticsTab" class="tab-content">
+            <!-- Pregnancy Analytics -->
+            <div class="pregnancy-mode-content">
+                <div class="analytics-card">
+                    <div class="section-title">
+                        <span>📈</span> Kick Patterns
+                    </div>
+                    <div class="period-selector">
+                        <button class="period-btn active" onclick="changePeriod(7)">7 Days</button>
+                        <button class="period-btn" onclick="changePeriod(14)">14 Days</button>
+                        <button class="period-btn" onclick="changePeriod(30)">30 Days</button>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="kickChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="analytics-card">
+                    <div class="section-title">
+                        <span>🎯</span> Kick Insights
+                    </div>
+                    <div class="insight-grid">
+                        <div class="insight-item">
+                            <div class="insight-value" id="yesterdayKicks">0</div>
+                            <div class="insight-label">Yesterday</div>
+                        </div>
+                        <div class="insight-item">
+                            <div class="insight-value" id="weekAvgKicks">0</div>
+                            <div class="insight-label">Daily Avg</div>
+                        </div>
+                        <div class="insight-item">
+                            <div class="insight-value" id="bestKickTime">--</div>
+                            <div class="insight-label">Peak Time</div>
+                        </div>
+                        <div class="insight-item">
+                            <div class="insight-value" id="kickTrend">--</div>
+                            <div class="insight-label">Trend</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Baby Analytics -->
+            <div class="baby-mode-content">
+                <!-- Feeding Analytics -->
+                <div class="analytics-card">
+                    <div class="section-title">
+                        <span>🍼</span> Feeding Analytics
+                    </div>
+                    <div class="period-selector">
+                        <button class="period-btn active" onclick="changePeriod(7)">7 Days</button>
+                        <button class="period-btn" onclick="changePeriod(14)">14 Days</button>
+                        <button class="period-btn" onclick="changePeriod(30)">30 Days</button>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="feedingChart"></canvas>
+                    </div>
+                    <div class="insight-grid" style="margin-top: 15px;">
+                        <div class="insight-item">
+                            <div class="insight-value" id="avgFeedingTime">0 min</div>
+                            <div class="insight-label">Avg Duration</div>
+                        </div>
+                        <div class="insight-item">
+                            <div class="insight-value" id="avgFeedingInterval">0h</div>
+                            <div class="insight-label">Avg Interval</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Diaper Analytics -->
+                <div class="analytics-card">
+                    <div class="section-title">
+                        <span>🚼</span> Diaper Analytics
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="diaperChart"></canvas>
+                    </div>
+                    <div class="insight-grid" style="margin-top: 15px;">
+                        <div class="insight-item">
+                            <div class="insight-value" id="weekPees">0</div>
+                            <div class="insight-label">Week Wet</div>
+                        </div>
+                        <div class="insight-item">
+                            <div class="insight-value" id="weekPoops">0</div>
+                            <div class="insight-label">Week Dirty</div>
+                        </div>
+                        <div class="insight-item">
+                            <div class="insight-value" id="avgDiapers">0</div>
+                            <div class="insight-label">Daily Avg</div>
+                        </div>
+                        <div class="insight-item">
+                            <div class="insight-value" id="diaperRatio">--</div>
+                            <div class="insight-label">Wet:Dirty</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Patterns -->
+                <div class="analytics-card">
+                    <div class="section-title">
+                        <span>⏰</span> Daily Patterns
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="patternChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Export Section -->
+            <div class="export-section">
+                <div class="section-title">
+                    <span>📄</span> Export Reports
+                </div>
+                <button class="btn export-btn" onclick="exportComprehensiveReport()">
+                    Download Complete Report (PDF)
+                </button>
+                <p style="margin-top: 10px; font-size: 12px; color: var(--text-light);">
+                    Professional format for doctor visits
+                </p>
+            </div>
+        </div>
+
+        <!-- MEMORIES TAB -->
+        <div id="memoriesTab" class="tab-content">
+            <div class="memory-card">
+                <div class="section-title">
+                    <span>📸</span> Today's Photo
+                </div>
+                <div class="photo-upload-btn" onclick="capturePhoto()">
+                    <span style="font-size: 40px;">📷</span>
+                    <span style="margin-top: 10px; color: var(--text-light);">Tap to add photo</span>
+                </div>
+                <input type="file" id="photoInput" accept="image/*" capture="camera" style="display: none;" onchange="handlePhotoUpload(event)">
+            </div>
+
+            <div class="memory-card">
+                <div class="section-title">
+                    <span>🎯</span> Milestones
+                </div>
+                <div id="milestoneList">
+                    <div class="milestone-item" onclick="addMilestone('First Kick')">
+                        <div class="milestone-icon">👣</div>
+                        <div class="milestone-details">
+                            <div class="milestone-title">First Kick Felt</div>
+                            <div class="milestone-date">Tap to record</div>
+                        </div>
+                    </div>
+                    <div class="milestone-item" onclick="addMilestone('First Smile')">
+                        <div class="milestone-icon">😊</div>
+                        <div class="milestone-details">
+                            <div class="milestone-title">First Smile</div>
+                            <div class="milestone-date">Coming soon</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="memory-card">
+                <div class="section-title">
+                    <span>📷</span> Photo Gallery
+                </div>
+                <div class="photo-grid" id="photoGallery">
+                    <div style="text-align: center; color: var(--text-light); grid-column: 1 / -1;">No photos yet</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- CONNECT TAB -->
+        <div id="connectTab" class="tab-content">
+            <div class="message-card">
+                <div class="section-title">
+                    <span>💕</span> Send Love
+                </div>
+                <button class="love-btn" id="loveBtn" onclick="sendLove()">
+                    ❤️
+                </button>
+                <p style="text-align: center; color: var(--text-light); font-size: 14px;">
+                    Tap to send love to your partner
+                </p>
+            </div>
+
+            <div class="message-card">
+                <div class="section-title">
+                    <span>💬</span> Quick Messages
+                </div>
+                <div id="messageList" style="max-height: 300px; overflow-y: auto; margin-bottom: 15px;">
+                    <!-- Messages will appear here -->
+                </div>
+                <input type="text" class="message-input" id="messageInput" placeholder="Send a sweet message..." onkeypress="if(event.key==='Enter') sendMessage()">
+            </div>
+
+            <div class="contraction-timer">
+                <div class="section-title">
+                    <span>⏱️</span> Contraction Timer
+                </div>
+                <div class="timer-display" id="contractionTimer">00:00</div>
+                <button class="btn btn-primary" style="width: 100%;" onclick="toggleContraction()">
+                    Start Contraction
+                </button>
+                <div id="contractionList" style="margin-top: 15px; max-height: 200px; overflow-y: auto;">
+                    <!-- Contractions will appear here -->
+                </div>
+            </div>
+
+            <div class="message-card">
+                <div class="section-title">
+                    <span>📝</span> Quick Notes
+                </div>
+                <textarea class="message-input" id="notesInput" placeholder="Add notes about how you're feeling..." style="height: 100px;"></textarea>
+                <button class="btn btn-primary" style="width: 100%; margin-top: 10px;" onclick="saveNote()">
+                    Save Note
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bottom Navigation -->
+    <div class="bottom-nav">
+        <div class="nav-item active" onclick="switchTab('home')">
+            <div class="icon">🏠</div>
+            <div class="label">Home</div>
+        </div>
+        <div class="nav-item" onclick="switchTab('analytics')">
+            <div class="icon">📊</div>
+            <div class="label">Analytics</div>
+        </div>
+        <div class="nav-item" onclick="switchTab('memories')">
+            <div class="icon">📸</div>
+            <div class="label">Memories</div>
+        </div>
+        <div class="nav-item" onclick="switchTab('connect')">
+            <div class="icon">💕</div>
+            <div class="label">Connect</div>
+        </div>
+    </div>
+
+    <!-- Voice Control FAB -->
+    <button class="voice-control-fab" id="voiceButton" onclick="toggleVoiceControl()">
+        🎤
+    </button>
+
+    <!-- Photo Viewer Modal -->
+    <div class="photo-viewer" id="photoViewer" onclick="closePhotoViewer()">
+        <img id="photoViewerImg" src="" alt="Photo">
+    </div>
+
+    <!-- Toast Notification -->
+    <div class="toast" id="toast">
+        <span id="toastIcon">✓</span>
+        <span id="toastMessage">Activity recorded!</span>
+    </div>
+
+    <script>
+        // ==========================================
+        // FIREBASE CONFIGURATION
+        // ==========================================
+        
+        // TODO: Replace with your Firebase config
+        const firebaseConfig = {
+            apiKey: "YOUR_API_KEY",
+            authDomain: "YOUR_AUTH_DOMAIN",
+            databaseURL: "YOUR_DATABASE_URL",
+            projectId: "YOUR_PROJECT_ID",
+            storageBucket: "YOUR_STORAGE_BUCKET",
+            messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+            appId: "YOUR_APP_ID"
+        };
+
+        // Initialize variables
+        let database = null;
+        let activitiesRef = null;
+        let kicksRef = null;
+        let photosRef = null;
+        let messagesRef = null;
+        let milestonesRef = null;
+        let notesRef = null;
+        let isOnline = false;
+        
+        // App state
+        let currentMode = 'pregnancy';
+        let currentTab = 'home';
+        let currentLogTab = 'feeding';
+        let currentUser = null;
+        let kicks = [];
+        let activities = [];
+        let photos = [];
+        let messages = [];
+        let milestones = [];
+        let notes = [];
+        let audioContext = null;
+        let currentPeriod = 7;
+        let kickSession = { active: false, startTime: null, kicks: 0 };
+        let contractionTimer = { active: false, startTime: null };
+        let feedingTimers = {
+            left: { active: false, startTime: null, totalTime: 0 },
+            right: { active: false, startTime: null, totalTime: 0 }
+        };
+        
+        // Voice recognition
+        let recognition = null;
+        let isListening = false;
+        
+        // Daily Affirmations
+        const affirmations = [
+            "Every kick is a tiny hello from your little miracle.",
+            "You're growing a whole human - you're amazing!",
+            "Your body knows exactly what to do. Trust it.",
+            "This little one is so lucky to have you both.",
+            "Every day brings you closer to meeting your baby.",
+            "You're already wonderful parents.",
+            "Your love creates miracles.",
+            "Avi is surrounded by so much love already.",
+            "Take a deep breath. You've got this.",
+            "Your journey is beautiful and unique.",
+            "The best is yet to come.",
+            "December 12th - Avi arrives! The most special day!",
+            "Your strength amazes everyone around you.",
+            "This baby chose the perfect parents.",
+            "Every moment is a blessing."
+        ];
+
+        // Initialize Firebase if config is set
+        if (firebaseConfig.apiKey && firebaseConfig.apiKey !== "YOUR_API_KEY") {
+            try {
+                firebase.initializeApp(firebaseConfig);
+                database = firebase.database();
+                activitiesRef = database.ref('activities');
+                kicksRef = database.ref('kicks');
+                photosRef = database.ref('photos');
+                messagesRef = database.ref('messages');
+                milestonesRef = database.ref('milestones');
+                notesRef = database.ref('notes');
+                
+                // Monitor connection
+                database.ref('.info/connected').on('value', (snap) => {
+                    isOnline = snap.val() === true;
+                    updateConnectionStatus(isOnline);
+                });
+                
+                setupFirebaseListeners();
+            } catch (error) {
+                console.error('Firebase initialization error:', error);
+            }
+        }
+
+        // ==========================================
+        // INITIALIZATION
+        // ==========================================
+        
+        function init() {
+            checkUserSetup();
+            loadSettings();
+            updateDailyAffirmation();
+            initCharts();
+            initVoiceRecognition();
+            loadLocalData();
+            
+            // Update UI
+            if (currentMode === 'pregnancy') {
+                initPregnancyMode();
+            } else {
+                initBabyMode();
+            }
+            
+            // Initialize audio context
+            document.addEventListener('click', () => {
+                if (!audioContext) {
+                    audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                }
+            }, { once: true });
+            
+            // Update timers
+            setInterval(updateTimers, 1000);
+            
+            // Update analytics
+            setInterval(updateAnalytics, 60000);
+        }
+        
+        function checkUserSetup() {
+            const saved = localStorage.getItem('babyTrackerUser');
+            if (!saved) {
+                document.getElementById('setupModal').style.display = 'flex';
+            } else {
+                currentUser = JSON.parse(saved);
+            }
+        }
+        
+        function setupUser(role) {
+            const name = document.getElementById('setupName').value.trim();
+            if (!name) {
+                showToast('Please enter your name', 'warning');
+                return;
+            }
+            
+            currentUser = {
+                name: name,
+                role: role,
+                id: role + '_' + Date.now()
+            };
+            
+            localStorage.setItem('babyTrackerUser', JSON.stringify(currentUser));
+            document.getElementById('setupModal').style.display = 'none';
+            
+            // Save to Firebase
+            if (database) {
+                database.ref('parents/' + role).set(currentUser);
+            }
+            
+            showToast(`Welcome ${name}! 👶`, 'success');
+            init();
+        }
+
+        function loadSettings() {
+            const savedMode = localStorage.getItem('trackingMode');
+            if (savedMode) {
+                currentMode = savedMode;
+                document.body.className = savedMode + '-mode';
+            }
+        }
+
+        function loadLocalData() {
+            // Only load local data if Firebase is not available
+            if (!database) {
+                const savedKicks = localStorage.getItem('babyTrackerKicks');
+                if (savedKicks) kicks = JSON.parse(savedKicks);
+                
+                const savedActivities = localStorage.getItem('babyTrackerActivities');
+                if (savedActivities) activities = JSON.parse(savedActivities);
+                
+                const savedPhotos = localStorage.getItem('babyTrackerPhotos');
+                if (savedPhotos) photos = JSON.parse(savedPhotos);
+                
+                const savedMessages = localStorage.getItem('babyTrackerMessages');
+                if (savedMessages) messages = JSON.parse(savedMessages);
+                
+                const savedNotes = localStorage.getItem('babyTrackerNotes');
+                if (savedNotes) notes = JSON.parse(savedNotes);
+            }
+        }
+        
+        // ==========================================
+        // VOICE RECOGNITION
+        // ==========================================
+        
+        function initVoiceRecognition() {
+            if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+                const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+                recognition = new SpeechRecognition();
+                recognition.continuous = false;
+                recognition.interimResults = false;
+                recognition.lang = 'en-US';
+                
+                recognition.onresult = function(event) {
+                    const command = event.results[0][0].transcript.toLowerCase();
+                    processVoiceCommand(command);
+                };
+                
+                recognition.onerror = function(event) {
+                    console.error('Voice recognition error:', event.error);
+                    isListening = false;
+                    updateVoiceButton(false);
+                };
+                
+                recognition.onend = function() {
+                    isListening = false;
+                    updateVoiceButton(false);
+                };
+            }
+        }
+        
+        function toggleVoiceControl() {
+            if (!recognition) {
+                showToast('Voice control not supported', 'warning');
+                return;
+            }
+            
+            if (isListening) {
+                recognition.stop();
+                isListening = false;
+                updateVoiceButton(false);
+            } else {
+                recognition.start();
+                isListening = true;
+                updateVoiceButton(true);
+                showToast('🎤 Listening...', 'info');
+            }
+        }
+        
+        function updateVoiceButton(listening) {
+            const btn = document.getElementById('voiceButton');
+            if (listening) {
+                btn.classList.add('listening');
+            } else {
+                btn.classList.remove('listening');
+            }
+        }
+        
+        function processVoiceCommand(command) {
+            console.log('Voice command:', command);
+            command = command.toLowerCase().trim();
+            
+            if (currentMode === 'pregnancy') {
+                // Pregnancy commands
+                if (command.includes('kick') || command.includes('movement') || 
+                    command.includes('patada') || command.includes('movimiento')) {
+                    recordKick();
+                    showToast('👣 Kick recorded by voice!', 'success');
+                } else if (command.includes('start') || command.includes('iniciar')) {
+                    startKickSession();
+                } else if (command.includes('end') || command.includes('terminar')) {
+                    endKickSession();
+                }
+            } else {
+                // Baby commands
+                if ((command.includes('left') || command.includes('izq')) && 
+                    (command.includes('feed') || command.includes('pecho'))) {
+                    toggleFeeding('left');
+                } else if ((command.includes('right') || command.includes('derech')) && 
+                          (command.includes('feed') || command.includes('pecho'))) {
+                    toggleFeeding('right');
+                } else if (command === 'left' || command === 'izquierda') {
+                    toggleFeeding('left');
+                } else if (command === 'right' || command === 'derecha') {
+                    toggleFeeding('right');
+                } else if (command.includes('poop') || command.includes('popó') || command.includes('caca')) {
+                    recordDiaper('poop');
+                } else if (command.includes('pee') || command.includes('pipí') || command.includes('wet')) {
+                    recordDiaper('pee');
+                }
+            }
+        }
+
+        // ==========================================
+        // TAB NAVIGATION
+        // ==========================================
+        
+        function switchTab(tabName) {
+            currentTab = tabName;
+            
+            // Update nav items
+            document.querySelectorAll('.nav-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            event.currentTarget.classList.add('active');
+            
+            // Show correct tab content
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            document.getElementById(tabName + 'Tab').classList.add('active');
+            
+            // Update content
+            if (tabName === 'analytics') {
+                updateAnalytics();
+            } else if (tabName === 'memories') {
+                loadPhotoGallery();
+            } else if (tabName === 'connect') {
+                loadMessages();
+            }
+        }
+        
+        function switchLogTab(tabName) {
+            currentLogTab = tabName;
+            
+            // Update tab buttons
+            document.querySelectorAll('.log-tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            
+            // Show correct log content
+            document.querySelectorAll('.log-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            
+            if (tabName === 'feeding') {
+                document.getElementById('feedingLog').classList.add('active');
+                renderFeedingLog();
+            } else if (tabName === 'diapers') {
+                document.getElementById('diapersLog').classList.add('active');
+                renderDiaperLog();
+            } else if (tabName === 'all') {
+                document.getElementById('allLog').classList.add('active');
+                renderBabyLog();
+            }
+        }
+
+        // ==========================================
+        // MODE SWITCHING
+        // ==========================================
+        
+        function switchMode(mode) {
+            currentMode = mode;
+            localStorage.setItem('trackingMode', mode);
+            document.body.className = mode + '-mode';
+            
+            // Update buttons
+            document.getElementById('pregnancyModeBtn').classList.toggle('active', mode === 'pregnancy');
+            document.getElementById('babyModeBtn').classList.toggle('active', mode === 'baby');
+            
+            // Update header
+            document.getElementById('modeIcon').textContent = mode === 'pregnancy' ? '🤰' : '👶';
+            
+            // Refresh content
+            if (mode === 'pregnancy') {
+                initPregnancyMode();
+            } else {
+                initBabyMode();
+            }
+            
+            updateAnalytics();
+        }
+
+        // ==========================================
+        // PREGNANCY MODE
+        // ==========================================
+        
+        function initPregnancyMode() {
+            updateKickStats();
+            renderPregnancyLog();
+        }
+
+        function recordKick() {
+            if (!currentUser) {
+                showToast('Please set up your profile first', 'warning');
+                return;
+            }
+            
+            // Haptic feedback
+            if (navigator.vibrate) {
+                navigator.vibrate([50, 30, 50]);
+            }
+            
+            const kick = {
+                timestamp: Date.now(),
+                parent: currentUser,
+                id: 'kick_' + Date.now()
+            };
+            
+            // Animation
+            const btn = document.getElementById('kickBtn');
+            btn.classList.add('pulse');
+            setTimeout(() => btn.classList.remove('pulse'), 500);
+            
+            // Save to Firebase if available
+            if (kicksRef) {
+                const newRef = kicksRef.push();
+                kick.firebaseId = newRef.key;
+                newRef.set(kick).catch((error) => {
+                    console.error('Firebase save failed:', error);
+                    kicks.push(kick);
+                    saveLocalData();
+                });
+            } else {
+                kicks.push(kick);
+                saveLocalData();
+            }
+            
+            // Update session
+            if (kickSession.active) {
+                kickSession.kicks++;
+                document.getElementById('sessionKicks').textContent = kickSession.kicks;
+            }
+            
+            updateKickStats();
+            renderPregnancyLog();
+            showToast('👣 Kick recorded!', 'success');
+            playKickSound();
+        }
+        
+        function startKickSession() {
+            kickSession = {
+                active: true,
+                startTime: Date.now(),
+                kicks: 0
+            };
+            document.getElementById('sessionKicks').textContent = '0';
+            showToast('⏱️ Counting session started', 'info');
+        }
+        
+        function endKickSession() {
+            if (kickSession.active) {
+                const duration = Math.floor((Date.now() - kickSession.startTime) / 1000);
+                showToast(`Session ended: ${kickSession.kicks} kicks in ${formatDuration(duration)}`, 'success');
+                
+                kickSession = {
+                    active: false,
+                    startTime: null,
+                    kicks: 0
+                };
+                
+                document.getElementById('sessionKicks').textContent = '0';
+                document.getElementById('sessionTimer').textContent = '00:00';
+            }
+        }
+        
+        function updateTimers() {
+            // Update kick session timer
+            if (kickSession.active) {
+                const elapsed = Math.floor((Date.now() - kickSession.startTime) / 1000);
+                document.getElementById('sessionTimer').textContent = formatDuration(elapsed);
+            }
+            
+            // Update contraction timer
+            if (contractionTimer.active) {
+                const elapsed = Math.floor((Date.now() - contractionTimer.startTime) / 1000);
+                document.getElementById('contractionTimer').textContent = formatDuration(elapsed);
+            }
+            
+            // Update feeding timers
+            if (feedingTimers.left.active) {
+                const elapsed = Math.floor((Date.now() - feedingTimers.left.startTime) / 1000);
+                document.getElementById('leftFeedingTimer').textContent = formatDuration(elapsed);
+            }
+            
+            if (feedingTimers.right.active) {
+                const elapsed = Math.floor((Date.now() - feedingTimers.right.startTime) / 1000);
+                document.getElementById('rightFeedingTimer').textContent = formatDuration(elapsed);
+            }
+        }
+        
+        function formatDuration(seconds) {
+            const mins = Math.floor(seconds / 60);
+            const secs = seconds % 60;
+            return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+        }
+
+        function updateKickStats() {
+            const today = new Date().toDateString();
+            const todayKicks = kicks.filter(k => 
+                new Date(k.timestamp).toDateString() === today
+            );
+            
+            document.getElementById('kickCount').textContent = todayKicks.length;
+            document.getElementById('sessionTodayTotal').textContent = todayKicks.length;
+            
+            // Last hour
+            const oneHourAgo = Date.now() - (60 * 60 * 1000);
+            const lastHourKicks = todayKicks.filter(k => k.timestamp > oneHourAgo);
+            document.getElementById('lastHourKicks').textContent = lastHourKicks.length;
+            
+            // Daily goal
+            const goal = 10;
+            document.getElementById('dailyGoal').textContent = `${Math.min(todayKicks.length, goal)}/${goal}`;
+        }
+
+        function renderPregnancyLog() {
+            const logEl = document.getElementById('pregnancyActivityLog');
+            const today = new Date().toDateString();
+            const recentKicks = kicks
+                .filter(k => new Date(k.timestamp).toDateString() === today)
+                .slice(-10)
+                .reverse();
+            
+            if (recentKicks.length === 0) {
+                logEl.innerHTML = '<div class="loading">No kicks recorded today</div>';
+                return;
+            }
+            
+            logEl.innerHTML = recentKicks.map(kick => {
+                const parentBadge = kick.parent ? 
+                    `<span class="parent-badge ${kick.parent.role}">${kick.parent.name}</span>` : '';
+                
+                return `
+                    <div class="log-item">
+                        <div class="log-icon">👣</div>
+                        <div class="log-details">
+                            <div style="font-weight: 600;">
+                                Baby Kick ${parentBadge}
+                            </div>
+                            <div style="font-size: 12px; color: var(--text-light);">
+                                ${new Date(kick.timestamp).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
+                            </div>
+                        </div>
+                        <button class="log-delete" onclick="deleteKick('${kick.firebaseId || kick.id}')">✕</button>
+                    </div>
+                `;
+            }).join('');
+        }
+        
+        function deleteKick(id) {
+            if (confirm('Delete this kick?')) {
+                if (kicksRef && id.startsWith('-')) {
+                    kicksRef.child(id).remove();
+                }
+                
+                kicks = kicks.filter(k => k.firebaseId !== id && k.id !== id);
+                saveLocalData();
+                updateKickStats();
+                renderPregnancyLog();
+                showToast('Entry deleted', 'info');
+            }
+        }
+
+        // ==========================================
+        // BABY MODE
+        // ==========================================
+        
+        function initBabyMode() {
+            updateBabyStats();
+            renderFeedingLog();
+            renderDiaperLog();
+            renderBabyLog();
+        }
+        
+        function toggleFeeding(side) {
+            if (!currentUser) {
+                showToast('Please set up your profile first', 'warning');
+                return;
+            }
+            
+            const timer = feedingTimers[side];
+            const sideElement = document.getElementById(`${side}FeedingSide`);
+            
+            if (timer.active) {
+                // Stop feeding
+                const duration = Math.floor((Date.now() - timer.startTime) / 1000);
+                timer.totalTime += duration;
+                timer.active = false;
+                timer.startTime = null;
+                
+                sideElement.classList.remove('active');
+                
+                // Save feeding session
+                const activity = {
+                    type: 'feeding',
+                    side: side,
+                    duration: duration,
+                    timestamp: Date.now(),
+                    parent: currentUser,
+                    id: 'feed_' + Date.now()
+                };
+                
+                saveActivity(activity);
+                showToast(`🍼 ${side} side feeding ended (${formatDuration(duration)})`, 'success');
+                
+                // Reset timer display
+                document.getElementById(`${side}FeedingTimer`).textContent = '00:00';
+            } else {
+                // Start feeding
+                timer.active = true;
+                timer.startTime = Date.now();
+                sideElement.classList.add('active');
+                
+                showToast(`🍼 ${side} side feeding started`, 'info');
+            }
+            
+            updateTotalFeedingTime();
+        }
+        
+        function updateTotalFeedingTime() {
+            const today = new Date().toDateString();
+            const todayFeedings = activities.filter(a => 
+                a.type === 'feeding' && 
+                new Date(a.timestamp).toDateString() === today
+            );
+            
+            const totalSeconds = todayFeedings.reduce((acc, f) => acc + (f.duration || 0), 0);
+            const totalMinutes = Math.round(totalSeconds / 60);
+            
+            document.getElementById('totalFeedingTime').textContent = totalMinutes + ' min';
+        }
+
+        function recordDiaper(type) {
+            if (!currentUser) {
+                showToast('Please set up your profile first', 'warning');
+                return;
+            }
+            
+            if (navigator.vibrate) navigator.vibrate(50);
+            
+            const activity = {
+                type: 'diaper',
+                diaperType: type,
+                timestamp: Date.now(),
+                parent: currentUser,
+                id: 'diaper_' + Date.now()
+            };
+            
+            saveActivity(activity);
+            const icon = type === 'pee' ? '💧' : '💩';
+            showToast(`${icon} Diaper recorded`, 'success');
+        }
+
+        function saveActivity(activity) {
+            if (activitiesRef) {
+                const newRef = activitiesRef.push();
+                activity.firebaseId = newRef.key;
+                newRef.set(activity).catch((error) => {
+                    console.error('Firebase save failed:', error);
+                    activities.push(activity);
+                    saveLocalData();
+                    updateBabyStats();
+                    refreshLogs();
+                });
+            } else {
+                activities.push(activity);
+                saveLocalData();
+                updateBabyStats();
+                refreshLogs();
+            }
+        }
+        
+        function refreshLogs() {
+            if (currentLogTab === 'feeding') {
+                renderFeedingLog();
+            } else if (currentLogTab === 'diapers') {
+                renderDiaperLog();
+            } else {
+                renderBabyLog();
+            }
+        }
+
+        function updateBabyStats() {
+            const today = new Date().toDateString();
+            const todayActivities = activities.filter(a => 
+                new Date(a.timestamp).toDateString() === today
+            );
+            
+            const feedings = todayActivities.filter(a => a.type === 'feeding').length;
+            const pees = todayActivities.filter(a => a.type === 'diaper' && a.diaperType === 'pee').length;
+            const poops = todayActivities.filter(a => a.type === 'diaper' && a.diaperType === 'poop').length;
+            
+            document.getElementById('todayFeedings').textContent = feedings;
+            document.getElementById('todayPees').textContent = pees;
+            document.getElementById('todayPoops').textContent = poops;
+            
+            updateTotalFeedingTime();
+        }
+        
+        function renderFeedingLog() {
+            const logEl = document.getElementById('feedingLog');
+            const today = new Date().toDateString();
+            const todayFeedings = activities
+                .filter(a => a.type === 'feeding' && new Date(a.timestamp).toDateString() === today)
+                .reverse();
+            
+            if (todayFeedings.length === 0) {
+                logEl.innerHTML = '<div class="loading">No feedings today</div>';
+                return;
+            }
+            
+            logEl.innerHTML = todayFeedings.map(activity => {
+                const parentBadge = activity.parent ? 
+                    `<span class="parent-badge ${activity.parent.role}">${activity.parent.name}</span>` : '';
+                const duration = activity.duration ? ` • ${Math.round(activity.duration / 60)} min` : '';
+                
+                return `
+                    <div class="log-item">
+                        <div class="log-icon">🍼</div>
+                        <div class="log-details">
+                            <div style="font-weight: 600;">
+                                ${activity.side} side feeding ${parentBadge}
+                            </div>
+                            <div style="font-size: 12px; color: var(--text-light);">
+                                ${new Date(activity.timestamp).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}${duration}
+                            </div>
+                        </div>
+                        <button class="log-delete" onclick="deleteActivity('${activity.firebaseId || activity.id}')">✕</button>
+                    </div>
+                `;
+            }).join('');
+        }
+        
+        function renderDiaperLog() {
+            const logEl = document.getElementById('diapersLog');
+            const today = new Date().toDateString();
+            const todayDiapers = activities
+                .filter(a => a.type === 'diaper' && new Date(a.timestamp).toDateString() === today)
+                .reverse();
+            
+            if (todayDiapers.length === 0) {
+                logEl.innerHTML = '<div class="loading">No diaper changes today</div>';
+                return;
+            }
+            
+            logEl.innerHTML = todayDiapers.map(activity => {
+                const icon = activity.diaperType === 'pee' ? '💧' : '💩';
+                const title = activity.diaperType === 'pee' ? 'Wet diaper' : 'Dirty diaper';
+                const parentBadge = activity.parent ? 
+                    `<span class="parent-badge ${activity.parent.role}">${activity.parent.name}</span>` : '';
+                
+                return `
+                    <div class="log-item">
+                        <div class="log-icon">${icon}</div>
+                        <div class="log-details">
+                            <div style="font-weight: 600;">
+                                ${title} ${parentBadge}
+                            </div>
+                            <div style="font-size: 12px; color: var(--text-light);">
+                                ${new Date(activity.timestamp).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
+                            </div>
+                        </div>
+                        <button class="log-delete" onclick="deleteActivity('${activity.firebaseId || activity.id}')">✕</button>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function renderBabyLog() {
+            const logEl = document.getElementById('allLog');
+            const today = new Date().toDateString();
+            const recentActivities = activities
+                .filter(a => new Date(a.timestamp).toDateString() === today)
+                .slice(-20)
+                .reverse();
+            
+            if (recentActivities.length === 0) {
+                logEl.innerHTML = '<div class="loading">No activities today</div>';
+                return;
+            }
+            
+            logEl.innerHTML = recentActivities.map(activity => {
+                let icon = '📝';
+                let title = 'Activity';
+                
+                if (activity.type === 'feeding') {
+                    icon = '🍼';
+                    title = `${activity.side} side feeding`;
+                    if (activity.duration) {
+                        title += ` • ${Math.round(activity.duration / 60)} min`;
+                    }
+                } else if (activity.type === 'diaper') {
+                    icon = activity.diaperType === 'pee' ? '💧' : '💩';
+                    title = activity.diaperType === 'pee' ? 'Wet diaper' : 'Dirty diaper';
+                }
+                
+                const parentBadge = activity.parent ? 
+                    `<span class="parent-badge ${activity.parent.role}">${activity.parent.name}</span>` : '';
+                
+                return `
+                    <div class="log-item">
+                        <div class="log-icon">${icon}</div>
+                        <div class="log-details">
+                            <div style="font-weight: 600;">
+                                ${title} ${parentBadge}
+                            </div>
+                            <div style="font-size: 12px; color: var(--text-light);">
+                                ${new Date(activity.timestamp).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
+                            </div>
+                        </div>
+                        <button class="log-delete" onclick="deleteActivity('${activity.firebaseId || activity.id}')">✕</button>
+                    </div>
+                `;
+            }).join('');
+        }
+        
+        function deleteActivity(id) {
+            if (confirm('Delete this activity?')) {
+                if (activitiesRef && id.startsWith('-')) {
+                    activitiesRef.child(id).remove();
+                }
+                
+                activities = activities.filter(a => a.firebaseId !== id && a.id !== id);
+                saveLocalData();
+                updateBabyStats();
+                refreshLogs();
+                showToast('Entry deleted', 'info');
+            }
+        }
+
+        // ==========================================
+        // ANALYTICS
+        // ==========================================
+        
+        let kickChart = null;
+        let feedingChart = null;
+        let diaperChart = null;
+        let patternChart = null;
+        
+        function initCharts() {
+            // Initialize all chart contexts
+            const kickCtx = document.getElementById('kickChart');
+            if (kickCtx) {
+                kickChart = new Chart(kickCtx, {
+                    type: 'bar',
+                    data: { labels: [], datasets: [{ label: 'Kicks', data: [], backgroundColor: 'rgba(254, 197, 229, 0.6)' }] },
+                    options: { responsive: true, maintainAspectRatio: false }
+                });
+            }
+            
+            const feedingCtx = document.getElementById('feedingChart');
+            if (feedingCtx) {
+                feedingChart = new Chart(feedingCtx, {
+                    type: 'bar',
+                    data: { labels: [], datasets: [{ label: 'Feedings', data: [], backgroundColor: 'rgba(135, 206, 235, 0.6)' }] },
+                    options: { responsive: true, maintainAspectRatio: false }
+                });
+            }
+            
+            const diaperCtx = document.getElementById('diaperChart');
+            if (diaperCtx) {
+                diaperChart = new Chart(diaperCtx, {
+                    type: 'pie',
+                    data: { labels: ['Wet', 'Dirty'], datasets: [{ data: [0, 0], backgroundColor: ['#ffe8a1', '#d4a373'] }] },
+                    options: { responsive: true, maintainAspectRatio: false }
+                });
+            }
+            
+            const patternCtx = document.getElementById('patternChart');
+            if (patternCtx) {
+                patternChart = new Chart(patternCtx, {
+                    type: 'line',
+                    data: { 
+                        labels: Array.from({length: 24}, (_, i) => `${i}:00`),
+                        datasets: [{ label: 'Activity', data: new Array(24).fill(0), borderColor: 'rgba(155, 123, 184, 1)', tension: 0.4 }]
+                    },
+                    options: { responsive: true, maintainAspectRatio: false }
+                });
+            }
+        }
+        
+        function changePeriod(days) {
+            currentPeriod = days;
+            
+            // Update button states
+            document.querySelectorAll('.period-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            
+            updateAnalytics();
+        }
+        
+        function updateAnalytics() {
+            if (currentTab !== 'analytics') return;
+            
+            const now = new Date();
+            
+            if (currentMode === 'pregnancy') {
+                updateKickAnalytics(now);
+            } else {
+                updateBabyAnalytics(now);
+            }
+        }
+        
+        function updateKickAnalytics(now) {
+            // Calculate kick data for selected period
+            const labels = [];
+            const chartData = [];
+            
+            for (let i = currentPeriod - 1; i >= 0; i--) {
+                const date = new Date(now);
+                date.setDate(date.getDate() - i);
+                const dayKicks = kicks.filter(k => 
+                    new Date(k.timestamp).toDateString() === date.toDateString()
+                );
+                
+                labels.push(date.toLocaleDateString('en-US', { weekday: 'short' }));
+                chartData.push(dayKicks.length);
+            }
+            
+            // Update chart
+            if (kickChart) {
+                kickChart.data.labels = labels;
+                kickChart.data.datasets[0].data = chartData;
+                kickChart.update();
+            }
+            
+            // Update insights
+            const yesterday = new Date(now);
+            yesterday.setDate(yesterday.getDate() - 1);
+            const yesterdayKicks = kicks.filter(k => 
+                new Date(k.timestamp).toDateString() === yesterday.toDateString()
+            );
+            
+            document.getElementById('yesterdayKicks').textContent = yesterdayKicks.length;
+            
+            const weekAvg = Math.round(chartData.reduce((a, b) => a + b, 0) / currentPeriod);
+            document.getElementById('weekAvgKicks').textContent = weekAvg;
+            
+            // Find peak hour
+            const todayKicks = kicks.filter(k => 
+                new Date(k.timestamp).toDateString() === now.toDateString()
+            );
+            const hourlyData = new Array(24).fill(0);
+            todayKicks.forEach(k => {
+                const hour = new Date(k.timestamp).getHours();
+                hourlyData[hour]++;
+            });
+            const peakHour = hourlyData.indexOf(Math.max(...hourlyData));
+            document.getElementById('bestKickTime').textContent = peakHour >= 0 ? `${peakHour}:00` : '--';
+            
+            // Calculate trend
+            const halfPoint = Math.floor(chartData.length / 2);
+            const firstHalf = chartData.slice(0, halfPoint).reduce((a, b) => a + b, 0) / halfPoint || 0;
+            const secondHalf = chartData.slice(halfPoint).reduce((a, b) => a + b, 0) / (chartData.length - halfPoint) || 0;
+            const trend = secondHalf > firstHalf ? '📈 Up' : secondHalf < firstHalf ? '📉 Down' : '➡️ Stable';
+            document.getElementById('kickTrend').textContent = trend;
+        }
+        
+        function updateBabyAnalytics(now) {
+            // Feeding Analytics
+            const labels = [];
+            const feedingData = [];
+            
+            for (let i = currentPeriod - 1; i >= 0; i--) {
+                const date = new Date(now);
+                date.setDate(date.getDate() - i);
+                const dayFeedings = activities.filter(a => 
+                    a.type === 'feeding' && 
+                    new Date(a.timestamp).toDateString() === date.toDateString()
+                );
+                
+                labels.push(date.toLocaleDateString('en-US', { weekday: 'short' }));
+                feedingData.push(dayFeedings.length);
+            }
+            
+            if (feedingChart) {
+                feedingChart.data.labels = labels;
+                feedingChart.data.datasets[0].data = feedingData;
+                feedingChart.update();
+            }
+            
+            // Calculate feeding insights
+            const allFeedings = activities.filter(a => a.type === 'feeding');
+            const avgDuration = allFeedings.reduce((acc, f) => acc + (f.duration || 0), 0) / allFeedings.length;
+            document.getElementById('avgFeedingTime').textContent = Math.round(avgDuration / 60) + ' min';
+            
+            // Calculate average interval
+            const sortedFeedings = allFeedings.sort((a, b) => a.timestamp - b.timestamp);
+            let totalInterval = 0;
+            let intervalCount = 0;
+            for (let i = 1; i < sortedFeedings.length; i++) {
+                totalInterval += sortedFeedings[i].timestamp - sortedFeedings[i-1].timestamp;
+                intervalCount++;
+            }
+            const avgInterval = intervalCount > 0 ? totalInterval / intervalCount : 0;
+            const avgIntervalHours = Math.round(avgInterval / (1000 * 60 * 60));
+            document.getElementById('avgFeedingInterval').textContent = avgIntervalHours + 'h';
+            
+            // Diaper Analytics
+            const weekDiapers = activities.filter(a => 
+                a.type === 'diaper' && 
+                new Date(a.timestamp) > new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
+            );
+            
+            const weekPees = weekDiapers.filter(a => a.diaperType === 'pee').length;
+            const weekPoops = weekDiapers.filter(a => a.diaperType === 'poop').length;
+            
+            document.getElementById('weekPees').textContent = weekPees;
+            document.getElementById('weekPoops').textContent = weekPoops;
+            document.getElementById('avgDiapers').textContent = Math.round((weekPees + weekPoops) / 7);
+            document.getElementById('diaperRatio').textContent = weekPees + ':' + weekPoops;
+            
+            if (diaperChart) {
+                diaperChart.data.datasets[0].data = [weekPees, weekPoops];
+                diaperChart.update();
+            }
+            
+            // Pattern Chart
+            const todayActivities = activities.filter(a => 
+                new Date(a.timestamp).toDateString() === now.toDateString()
+            );
+            const hourlyPattern = new Array(24).fill(0);
+            todayActivities.forEach(a => {
+                const hour = new Date(a.timestamp).getHours();
+                hourlyPattern[hour]++;
+            });
+            
+            if (patternChart) {
+                patternChart.data.datasets[0].data = hourlyPattern;
+                patternChart.update();
+            }
+        }
+        
+        function exportComprehensiveReport() {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            
+            // Title
+            doc.setFontSize(20);
+            doc.text("Avi's Comprehensive Health Report", 20, 20);
+            
+            // Date
+            doc.setFontSize(12);
+            doc.text(`Generated: ${new Date().toLocaleDateString()}`, 20, 30);
+            doc.text(`Mode: ${currentMode === 'pregnancy' ? 'Pregnancy' : 'Baby Care'}`, 20, 37);
+            
+            let yPos = 50;
+            
+            if (currentMode === 'pregnancy') {
+                // Pregnancy Report
+                doc.setFontSize(16);
+                doc.text("Kick Activity Summary", 20, yPos);
+                yPos += 10;
+                
+                doc.setFontSize(12);
+                const today = kicks.filter(k => 
+                    new Date(k.timestamp).toDateString() === new Date().toDateString()
+                ).length;
+                doc.text(`Today's Kicks: ${today}`, 30, yPos);
+                yPos += 7;
+                
+                const weekAvg = document.getElementById('weekAvgKicks').textContent;
+                doc.text(`Weekly Average: ${weekAvg} kicks/day`, 30, yPos);
+                yPos += 7;
+                
+                const peakTime = document.getElementById('bestKickTime').textContent;
+                doc.text(`Peak Activity Time: ${peakTime}`, 30, yPos);
+                yPos += 7;
+                
+                const trend = document.getElementById('kickTrend').textContent;
+                doc.text(`7-Day Trend: ${trend}`, 30, yPos);
+                yPos += 15;
+                
+                // Recent kicks log
+                doc.setFontSize(14);
+                doc.text("Recent Kick Activity", 20, yPos);
+                yPos += 10;
+                
+                doc.setFontSize(10);
+                const recentKicks = kicks.slice(-10).reverse();
+                recentKicks.forEach(kick => {
+                    const time = new Date(kick.timestamp).toLocaleString();
+                    const parent = kick.parent ? kick.parent.name : 'Unknown';
+                    doc.text(`${time} - Recorded by ${parent}`, 30, yPos);
+                    yPos += 6;
+                    if (yPos > 270) {
+                        doc.addPage();
+                        yPos = 20;
+                    }
+                });
+                
+            } else {
+                // Baby Care Report
+                doc.setFontSize(16);
+                doc.text("Baby Care Summary", 20, yPos);
+                yPos += 10;
+                
+                // Today's stats
+                doc.setFontSize(12);
+                const feedings = document.getElementById('todayFeedings').textContent;
+                const pees = document.getElementById('todayPees').textContent;
+                const poops = document.getElementById('todayPoops').textContent;
+                
+                doc.text(`Today's Feedings: ${feedings}`, 30, yPos);
+                yPos += 7;
+                doc.text(`Wet Diapers: ${pees}`, 30, yPos);
+                yPos += 7;
+                doc.text(`Dirty Diapers: ${poops}`, 30, yPos);
+                yPos += 15;
+                
+                // Feeding Details
+                doc.setFontSize(14);
+                doc.text("Feeding Analysis", 20, yPos);
+                yPos += 10;
+                
+                doc.setFontSize(10);
+                const avgDuration = document.getElementById('avgFeedingTime').textContent;
+                const avgInterval = document.getElementById('avgFeedingInterval').textContent;
+                doc.text(`Average Feeding Duration: ${avgDuration}`, 30, yPos);
+                yPos += 7;
+                doc.text(`Average Interval Between Feedings: ${avgInterval}`, 30, yPos);
+                yPos += 15;
+                
+                // Recent feedings
+                doc.setFontSize(12);
+                doc.text("Recent Feedings", 20, yPos);
+                yPos += 10;
+                
+                doc.setFontSize(10);
+                const recentFeedings = activities
+                    .filter(a => a.type === 'feeding')
+                    .slice(-10)
+                    .reverse();
+                    
+                recentFeedings.forEach(feeding => {
+                    const time = new Date(feeding.timestamp).toLocaleString();
+                    const side = feeding.side;
+                    const duration = feeding.duration ? ` (${Math.round(feeding.duration / 60)} min)` : '';
+                    const parent = feeding.parent ? feeding.parent.name : 'Unknown';
+                    doc.text(`${time} - ${side} side${duration} - by ${parent}`, 30, yPos);
+                    yPos += 6;
+                    if (yPos > 270) {
+                        doc.addPage();
+                        yPos = 20;
+                    }
+                });
+                
+                // Diaper log
+                yPos += 10;
+                doc.setFontSize(12);
+                doc.text("Recent Diaper Changes", 20, yPos);
+                yPos += 10;
+                
+                doc.setFontSize(10);
+                const recentDiapers = activities
+                    .filter(a => a.type === 'diaper')
+                    .slice(-10)
+                    .reverse();
+                    
+                recentDiapers.forEach(diaper => {
+                    const time = new Date(diaper.timestamp).toLocaleString();
+                    const type = diaper.diaperType === 'pee' ? 'Wet' : 'Dirty';
+                    const parent = diaper.parent ? diaper.parent.name : 'Unknown';
+                    doc.text(`${time} - ${type} - Changed by ${parent}`, 30, yPos);
+                    yPos += 6;
+                    if (yPos > 270) {
+                        doc.addPage();
+                        yPos = 20;
+                    }
+                });
+            }
+            
+            // Save
+            doc.save('avi-health-report.pdf');
+            showToast('📄 Report exported!', 'success');
+        }
+
+        // ==========================================
+        // MEMORIES & PHOTOS - Continued...
+        // ==========================================
+        
+        function capturePhoto() {
+            document.getElementById('photoInput').click();
+        }
+        
+        function handlePhotoUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                compressImage(e.target.result, (compressed) => {
+                    const photo = {
+                        data: compressed,
+                        timestamp: Date.now(),
+                        parent: currentUser
+                    };
+                    
+                    if (photosRef) {
+                        photosRef.push(photo);
+                    }
+                    photos.push(photo);
+                    saveLocalData();
+                    
+                    showToast('📸 Photo saved!', 'success');
+                    loadPhotoGallery();
+                });
+            };
+            reader.readAsDataURL(file);
+        }
+        
+        function compressImage(dataUrl, callback) {
+            const img = new Image();
+            img.onload = function() {
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                
+                const maxWidth = 800;
+                const scale = Math.min(maxWidth / img.width, 1);
+                canvas.width = img.width * scale;
+                canvas.height = img.height * scale;
+                
+                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                callback(canvas.toDataURL('image/jpeg', 0.7));
+            };
+            img.src = dataUrl;
+        }
+        
+        function loadPhotoGallery() {
+            const gallery = document.getElementById('photoGallery');
+            const recentPhotos = photos.slice(-9).reverse();
+            
+            if (recentPhotos.length === 0) {
+                gallery.innerHTML = '<div style="text-align: center; color: var(--text-light); grid-column: 1 / -1;">No photos yet</div>';
+                return;
+            }
+            
+            gallery.innerHTML = recentPhotos.map((photo, index) => `
+                <div class="photo-thumb" onclick="viewPhoto('${index}')">
+                    <img src="${photo.data}" alt="Memory">
+                </div>
+            `).join('');
+        }
+        
+        function viewPhoto(index) {
+            const photo = photos.slice(-9).reverse()[index];
+            if (photo) {
+                document.getElementById('photoViewerImg').src = photo.data;
+                document.getElementById('photoViewer').style.display = 'flex';
+            }
+        }
+        
+        function closePhotoViewer() {
+            document.getElementById('photoViewer').style.display = 'none';
+        }
+        
+        function addMilestone(type) {
+            const milestone = {
+                type: type,
+                timestamp: Date.now(),
+                parent: currentUser
+            };
+            
+            if (milestonesRef) {
+                milestonesRef.push(milestone);
+            }
+            milestones.push(milestone);
+            saveLocalData();
+            
+            showToast(`🎯 ${type} milestone added!`, 'success');
+            
+            // Update display
+            event.target.querySelector('.milestone-date').textContent = new Date().toLocaleDateString();
+        }
+
+        // ==========================================
+        // PARTNER CONNECTION
+        // ==========================================
+        
+        function sendLove() {
+            if (!currentUser) {
+                showToast('Please set up your profile first', 'warning');
+                return;
+            }
+            
+            const btn = document.getElementById('loveBtn');
+            btn.classList.add('pulse-animation');
+            setTimeout(() => btn.classList.remove('pulse-animation'), 1000);
+            
+            if (navigator.vibrate) {
+                navigator.vibrate([100, 50, 100, 50, 100]);
+            }
+            
+            const love = {
+                type: 'love',
+                from: currentUser,
+                timestamp: Date.now()
+            };
+            
+            if (messagesRef) {
+                messagesRef.push(love);
+            }
+            messages.push(love);
+            saveLocalData();
+            renderMessages();
+            
+            showToast('❤️ Love sent!', 'success');
+        }
+        
+        function sendMessage() {
+            if (!currentUser) {
+                showToast('Please set up your profile first', 'warning');
+                return;
+            }
+            
+            const input = document.getElementById('messageInput');
+            const text = input.value.trim();
+            if (!text) return;
+            
+            const message = {
+                type: 'message',
+                text: text,
+                from: currentUser,
+                timestamp: Date.now()
+            };
+            
+            if (messagesRef) {
+                messagesRef.push(message);
+            }
+            messages.push(message);
+            saveLocalData();
+            input.value = '';
+            renderMessages();
+        }
+        
+        function loadMessages() {
+            renderMessages();
+        }
+        
+        function renderMessages() {
+            const messageList = document.getElementById('messageList');
+            const recentMessages = messages.slice(-10);
+            
+            messageList.innerHTML = recentMessages.map(msg => {
+                if (msg.type === 'love') {
+                    return `<div style="text-align: center; margin: 10px;">
+                        <span style="font-size: 30px;">❤️</span>
+                        <div style="font-size: 12px; color: var(--text-light);">
+                            ${msg.from ? msg.from.name : 'Someone'} sent love
+                        </div>
+                    </div>`;
+                }
+                
+                const isMe = msg.from && currentUser && msg.from.id === currentUser.id;
+                return `
+                    <div class="message-bubble ${isMe ? 'from-me' : 'from-partner'}">
+                        <div style="font-size: 14px;">${msg.text}</div>
+                        <div style="font-size: 10px; opacity: 0.8; margin-top: 4px;">
+                            ${msg.from ? msg.from.name : ''} • ${new Date(msg.timestamp).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+            
+            messageList.scrollTop = messageList.scrollHeight;
+        }
+        
+        // Contraction Timer
+        function toggleContraction() {
+            if (contractionTimer.active) {
+                const duration = Math.floor((Date.now() - contractionTimer.startTime) / 1000);
+                
+                const contractionList = document.getElementById('contractionList');
+                const newContraction = document.createElement('div');
+                newContraction.style.cssText = 'padding: 8px; background: var(--accent); border-radius: 8px; margin-bottom: 5px;';
+                newContraction.innerHTML = `
+                    <strong>Duration:</strong> ${formatDuration(duration)}<br>
+                    <small>${new Date().toLocaleTimeString()}</small>
+                `;
+                contractionList.insertBefore(newContraction, contractionList.firstChild);
+                
+                contractionTimer.active = false;
+                document.getElementById('contractionTimer').textContent = '00:00';
+                event.target.textContent = 'Start Contraction';
+                
+                showToast(`Contraction lasted ${formatDuration(duration)}`, 'info');
+            } else {
+                contractionTimer.active = true;
+                contractionTimer.startTime = Date.now();
+                event.target.textContent = 'End Contraction';
+            }
+        }
+        
+        // Notes
+        function saveNote() {
+            if (!currentUser) {
+                showToast('Please set up your profile first', 'warning');
+                return;
+            }
+            
+            const input = document.getElementById('notesInput');
+            const text = input.value.trim();
+            if (!text) return;
+            
+            const note = {
+                text: text,
+                timestamp: Date.now(),
+                parent: currentUser
+            };
+            
+            if (notesRef) {
+                notesRef.push(note);
+            }
+            notes.push(note);
+            saveLocalData();
+            
+            input.value = '';
+            showToast('📝 Note saved!', 'success');
+        }
+
+        // ==========================================
+        // UTILITIES
+        // ==========================================
+        
+        function updateDailyAffirmation() {
+            const today = new Date().getDate();
+            const affirmation = affirmations[Math.min(today - 1, affirmations.length - 1)];
+            document.getElementById('dailyAffirmation').textContent = affirmation;
+        }
+        
+        function updateConnectionStatus(online) {
+            const dot = document.querySelector('.connection-dot');
+            const text = document.getElementById('connectionText');
+            
+            if (online) {
+                dot.style.background = 'var(--success)';
+                text.textContent = 'Connected';
+            } else {
+                dot.style.background = 'var(--warning)';
+                text.textContent = 'Offline';
+            }
+        }
+        
+        function showToast(message, type = 'success') {
+            const toast = document.getElementById('toast');
+            const toastMessage = document.getElementById('toastMessage');
+            
+            toastMessage.textContent = message;
+            toast.className = 'toast show';
+            
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 3000);
+        }
+        
+        function saveLocalData() {
+            localStorage.setItem('babyTrackerKicks', JSON.stringify(kicks.slice(-500)));
+            localStorage.setItem('babyTrackerActivities', JSON.stringify(activities.slice(-500)));
+            localStorage.setItem('babyTrackerPhotos', JSON.stringify(photos.slice(-20)));
+            localStorage.setItem('babyTrackerMessages', JSON.stringify(messages.slice(-100)));
+            localStorage.setItem('babyTrackerNotes', JSON.stringify(notes.slice(-50)));
+        }
+        
+        function playKickSound() {
+            if (!audioContext) return;
+            
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            oscillator.frequency.value = 800;
+            oscillator.type = 'sine';
+            gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.1);
+            
+            oscillator.start(audioContext.currentTime);
+            oscillator.stop(audioContext.currentTime + 0.1);
+        }
+        
+        function setupFirebaseListeners() {
+            console.log('Setting up Firebase listeners...');
+            
+            // Listen for kicks
+            kicksRef.limitToLast(100).on('child_added', (snapshot) => {
+                const kick = snapshot.val();
+                const key = snapshot.key;
+                if (kick && !kicks.find(k => k.firebaseId === key || (k.timestamp === kick.timestamp && k.parent && kick.parent && k.parent.id === kick.parent.id))) {
+                    kick.firebaseId = key;
+                    kicks.push(kick);
+                    if (currentMode === 'pregnancy') {
+                        updateKickStats();
+                        renderPregnancyLog();
+                    }
+                }
+            });
+            
+            kicksRef.on('child_removed', (snapshot) => {
+                kicks = kicks.filter(k => k.firebaseId !== snapshot.key);
+                if (currentMode === 'pregnancy') {
+                    updateKickStats();
+                    renderPregnancyLog();
+                }
+            });
+            
+            // Listen for activities
+            activitiesRef.limitToLast(100).on('child_added', (snapshot) => {
+                const activity = snapshot.val();
+                const key = snapshot.key;
+                if (activity && !activities.find(a => a.firebaseId === key || (a.timestamp === activity.timestamp && a.parent && activity.parent && a.parent.id === activity.parent.id))) {
+                    activity.firebaseId = key;
+                    activities.push(activity);
+                    if (currentMode === 'baby') {
+                        updateBabyStats();
+                        refreshLogs();
+                    }
+                }
+            });
+            
+            activitiesRef.on('child_removed', (snapshot) => {
+                activities = activities.filter(a => a.firebaseId !== snapshot.key);
+                if (currentMode === 'baby') {
+                    updateBabyStats();
+                    refreshLogs();
+                }
+            });
+            
+            // Listen for messages
+            messagesRef.limitToLast(50).on('child_added', (snapshot) => {
+                const message = snapshot.val();
+                if (message && !messages.find(m => m.timestamp === message.timestamp && m.from && message.from && m.from.id === message.from.id)) {
+                    messages.push(message);
+                    if (currentTab === 'connect') {
+                        renderMessages();
+                    }
+                    
+                    // Show notification
+                    if (currentUser && message.from && message.from.id !== currentUser.id) {
+                        if (message.type === 'love') {
+                            showToast(`❤️ ${message.from.name} sent you love!`, 'success');
+                            if (navigator.vibrate) {
+                                navigator.vibrate([100, 50, 100, 50, 100]);
+                            }
+                        } else if (message.type === 'message') {
+                            showToast(`💬 New message from ${message.from.name}`, 'info');
+                        }
+                    }
+                }
+            });
+            
+            // Listen for photos
+            photosRef.limitToLast(20).on('child_added', (snapshot) => {
+                const photo = snapshot.val();
+                if (photo && !photos.find(p => p.timestamp === photo.timestamp)) {
+                    photos.push(photo);
+                    if (currentTab === 'memories') {
+                        loadPhotoGallery();
+                    }
+                }
+            });
+        }
+        
+        // Initialize on load
+        window.addEventListener('load', init);
+    </script>
+</body>
+</html>
