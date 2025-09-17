@@ -771,9 +771,174 @@
             align-items: center;
             gap: 8px;
         }
+
+        /* Setup Modal */
+        .setup-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+        }
+
+        .setup-content {
+            background: var(--card-bg);
+            padding: 30px;
+            border-radius: 20px;
+            max-width: 400px;
+            width: 90%;
+            text-align: center;
+        }
+
+        /* Photo Viewer Modal */
+        .photo-viewer {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.9);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1500;
+            cursor: pointer;
+        }
+
+        .photo-viewer img {
+            max-width: 90%;
+            max-height: 90%;
+            border-radius: 10px;
+        }
+
+        /* Kick Session with Timer */
+        .session-info {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 15px;
+            padding: 15px;
+            background: var(--accent);
+            border-radius: 12px;
+        }
+
+        .session-stat {
+            text-align: center;
+        }
+
+        .session-label {
+            display: block;
+            font-size: 11px;
+            color: var(--text-light);
+            text-transform: uppercase;
+            margin-bottom: 5px;
+        }
+
+        .session-value {
+            display: block;
+            font-size: 24px;
+            font-weight: bold;
+            color: var(--primary);
+        }
+
+        .session-timer {
+            font-size: 28px;
+            font-weight: bold;
+            color: var(--primary);
+            text-align: center;
+            margin-bottom: 15px;
+            font-family: 'Courier New', monospace;
+        }
+
+        /* Contraction Timer */
+        .contraction-timer {
+            background: var(--card-bg);
+            border-radius: 20px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: var(--shadow);
+            text-align: center;
+        }
+
+        .timer-display {
+            font-size: 36px;
+            font-weight: bold;
+            color: var(--primary);
+            font-family: 'Courier New', monospace;
+            margin: 20px 0;
+        }
+
+        /* Period Selector for Analytics */
+        .period-selector {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .period-btn {
+            padding: 6px 16px;
+            border: none;
+            border-radius: 20px;
+            background: var(--accent);
+            color: var(--primary-dark);
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .period-btn.active {
+            background: var(--primary);
+            color: white;
+        }
+
+        /* Parent Badge */
+        .parent-badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 10px;
+            margin-left: 8px;
+            font-weight: 600;
+        }
+
+        .parent-badge.mom {
+            background: var(--mom-color);
+            color: white;
+        }
+
+        .parent-badge.dad {
+            background: var(--dad-color);
+            color: white;
+        }
     </style>
 </head>
 <body class="pregnancy-mode">
+    <!-- User Setup Modal -->
+    <div id="setupModal" class="setup-modal" style="display: none;">
+        <div class="setup-content">
+            <h2 style="color: var(--primary); margin-bottom: 20px;">👶 Welcome to Avi's Tracker!</h2>
+            <p style="margin-bottom: 20px; color: var(--text-light);">Let's personalize your experience (one time only!)</p>
+            
+            <input type="text" id="setupName" placeholder="Your name" style="width: 100%; padding: 12px; border: 2px solid var(--accent); border-radius: 10px; margin-bottom: 20px; font-size: 16px;">
+            
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px;">
+                <button onclick="setupUser('mom')" class="btn" style="background: var(--mom-color); color: white;">
+                    👩 Mom
+                </button>
+                <button onclick="setupUser('dad')" class="btn" style="background: var(--dad-color); color: white;">
+                    👨 Dad
+                </button>
+            </div>
+        </div>
+    </div>
+
     <div class="container">
         <!-- Connection Status -->
         <div class="connection-status" id="connectionStatus">
@@ -821,6 +986,28 @@
                     </button>
                     <div style="font-size: 12px; color: var(--text-light); margin-top: 10px;">
                         Tap when you feel movement
+                    </div>
+                </div>
+
+                <!-- Kick Session Timer -->
+                <div class="analytics-card">
+                    <div class="section-title">
+                        <span>⏱️</span> Counting Session
+                    </div>
+                    <div class="session-info">
+                        <div class="session-stat">
+                            <span class="session-label">Session Kicks:</span>
+                            <span class="session-value" id="sessionKicks">0</span>
+                        </div>
+                        <div class="session-stat">
+                            <span class="session-label">Today Total:</span>
+                            <span class="session-value" id="sessionTodayTotal">0</span>
+                        </div>
+                    </div>
+                    <div class="session-timer" id="sessionTimer">00:00</div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                        <button class="btn btn-primary" onclick="startKickSession()">Start Session</button>
+                        <button class="btn" style="background: var(--danger); color: white;" onclick="endKickSession()">End Session</button>
                     </div>
                 </div>
 
@@ -885,7 +1072,12 @@
         <div id="analyticsTab" class="tab-content">
             <div class="analytics-card">
                 <div class="section-title">
-                    <span>📈</span> 7-Day Overview
+                    <span>📈</span> Activity Overview
+                </div>
+                <div class="period-selector">
+                    <button class="period-btn active" onclick="changePeriod(7)">7 Days</button>
+                    <button class="period-btn" onclick="changePeriod(14)">14 Days</button>
+                    <button class="period-btn" onclick="changePeriod(30)">30 Days</button>
                 </div>
                 <div class="chart-container">
                     <canvas id="weekChart"></canvas>
@@ -999,16 +1191,27 @@
                 <input type="text" class="message-input" id="messageInput" placeholder="Send a sweet message..." onkeypress="if(event.key==='Enter') sendMessage()">
             </div>
 
-            <div class="sound-controls">
+            <div class="contraction-timer">
                 <div class="section-title">
-                    <span>🎵</span> Soothing Sounds
+                    <span>⏱️</span> Contraction Timer
                 </div>
-                <div style="display: flex; flex-wrap: wrap; justify-content: center;">
-                    <button class="sound-btn" onclick="toggleSound('whitenoise')">White Noise</button>
-                    <button class="sound-btn" onclick="toggleSound('heartbeat')">Heartbeat</button>
-                    <button class="sound-btn" onclick="toggleSound('ocean')">Ocean Waves</button>
-                    <button class="sound-btn" onclick="toggleSound('lullaby')">Lullaby</button>
+                <div class="timer-display" id="contractionTimer">00:00</div>
+                <button class="btn btn-primary" style="width: 100%;" onclick="toggleContraction()">
+                    Start Contraction
+                </button>
+                <div id="contractionList" style="margin-top: 15px; max-height: 200px; overflow-y: auto;">
+                    <!-- Contractions will appear here -->
                 </div>
+            </div>
+
+            <div class="message-card">
+                <div class="section-title">
+                    <span>📝</span> Quick Notes
+                </div>
+                <textarea class="message-input" id="notesInput" placeholder="Add notes about how you're feeling..." style="height: 100px;"></textarea>
+                <button class="btn btn-primary" style="width: 100%; margin-top: 10px;" onclick="saveNote()">
+                    Save Note
+                </button>
             </div>
         </div>
     </div>
@@ -1038,6 +1241,11 @@
         🎤
     </button>
 
+    <!-- Photo Viewer Modal -->
+    <div class="photo-viewer" id="photoViewer" onclick="closePhotoViewer()">
+        <img id="photoViewerImg" src="" alt="Photo">
+    </div>
+
     <!-- Toast Notification -->
     <div class="toast" id="toast">
         <span id="toastIcon">✓</span>
@@ -1059,6 +1267,1222 @@
   messagingSenderId: "783062575404",
   appId: "1:783062575404:web:2ce2e7812bec4b2d4ee489"
 };
+
+        // Initialize Firebase
+        let database = null;
+        let activitiesRef = null;
+        let kicksRef = null;
+        let photosRef = null;
+        let messagesRef = null;
+        let milestonesRef = null;
+        let notesRef = null;
+        let isOnline = false;
+        
+        // Initialize app state
+        let currentMode = 'pregnancy';
+        let currentTab = 'home';
+        let currentUser = null;
+        let kicks = [];
+        let activities = [];
+        let photos = [];
+        let messages = [];
+        let milestones = [];
+        let notes = [];
+        let audioContext = null;
+        let currentPeriod = 7;
+        let kickSession = { active: false, startTime: null, kicks: 0 };
+        let contractionTimer = { active: false, startTime: null };
+        let sessionInterval = null;
+        let contractionInterval = null;
+        
+        // Voice recognition
+        let recognition = null;
+        let isListening = false;
+        
+        // Daily Affirmations
+        const affirmations = [
+            "Every kick is a tiny hello from your little miracle.",
+            "You're growing a whole human - you're amazing!",
+            "Your body knows exactly what to do. Trust it.",
+            "This little one is so lucky to have you both.",
+            "Every day brings you closer to meeting your baby.",
+            "You're already wonderful parents.",
+            "Your love creates miracles.",
+            "Avi is surrounded by so much love already.",
+            "Take a deep breath. You've got this.",
+            "Your journey is beautiful and unique.",
+            "The best is yet to come.",
+            "December 12th - Avi arrives! The most special day!", // Day 12
+            "Your strength amazes everyone around you.",
+            "This baby chose the perfect parents.",
+            "Every moment is a blessing."
+        ];
+
+        // Initialize Firebase if config is set
+        if (firebaseConfig.apiKey && firebaseConfig.apiKey !== "YOUR_API_KEY") {
+            try {
+                firebase.initializeApp(firebaseConfig);
+                database = firebase.database();
+                activitiesRef = database.ref('activities');
+                kicksRef = database.ref('kicks');
+                photosRef = database.ref('photos');
+                messagesRef = database.ref('messages');
+                milestonesRef = database.ref('milestones');
+                notesRef = database.ref('notes');
+                
+                // Monitor connection
+                database.ref('.info/connected').on('value', (snap) => {
+                    isOnline = snap.val() === true;
+                    updateConnectionStatus(isOnline);
+                });
+                
+                setupFirebaseListeners();
+            } catch (error) {
+                console.error('Firebase initialization error:', error);
+            }
+        }
+
+        // ==========================================
+        // INITIALIZATION
+        // ==========================================
+        
+        function init() {
+            checkUserSetup();
+            loadSettings();
+            updateDailyAffirmation();
+            initCharts();
+            initVoiceRecognition();
+            loadLocalData();
+            
+            // Update UI
+            if (currentMode === 'pregnancy') {
+                initPregnancyMode();
+            } else {
+                initBabyMode();
+            }
+            
+            // Initialize audio context for haptics
+            document.addEventListener('click', () => {
+                if (!audioContext) {
+                    audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                }
+            }, { once: true });
+            
+            // Update timers
+            setInterval(updateTimers, 1000);
+            
+            // Update analytics every minute
+            setInterval(updateAnalytics, 60000);
+        }
+        
+        function checkUserSetup() {
+            const saved = localStorage.getItem('babyTrackerUser');
+            if (!saved) {
+                document.getElementById('setupModal').style.display = 'flex';
+            } else {
+                currentUser = JSON.parse(saved);
+            }
+        }
+        
+        function setupUser(role) {
+            const name = document.getElementById('setupName').value.trim();
+            if (!name) {
+                showToast('Please enter your name', 'warning');
+                return;
+            }
+            
+            currentUser = {
+                name: name,
+                role: role,
+                id: role + '_' + Date.now()
+            };
+            
+            localStorage.setItem('babyTrackerUser', JSON.stringify(currentUser));
+            document.getElementById('setupModal').style.display = 'none';
+            
+            // Save to Firebase
+            if (database) {
+                database.ref('parents/' + role).set(currentUser);
+            }
+            
+            showToast(`Welcome ${name}! 👶`, 'success');
+            init();
+        }
+
+        function loadSettings() {
+            const savedMode = localStorage.getItem('trackingMode');
+            if (savedMode) {
+                currentMode = savedMode;
+                document.body.className = savedMode + '-mode';
+            }
+        }
+
+        function loadLocalData() {
+            const savedKicks = localStorage.getItem('babyTrackerKicks');
+            if (savedKicks) kicks = JSON.parse(savedKicks);
+            
+            const savedActivities = localStorage.getItem('babyTrackerActivities');
+            if (savedActivities) activities = JSON.parse(savedActivities);
+            
+            const savedPhotos = localStorage.getItem('babyTrackerPhotos');
+            if (savedPhotos) photos = JSON.parse(savedPhotos);
+            
+            const savedMessages = localStorage.getItem('babyTrackerMessages');
+            if (savedMessages) messages = JSON.parse(savedMessages);
+            
+            const savedNotes = localStorage.getItem('babyTrackerNotes');
+            if (savedNotes) notes = JSON.parse(savedNotes);
+        }
+        
+        // ==========================================
+        // VOICE RECOGNITION
+        // ==========================================
+        
+        function initVoiceRecognition() {
+            if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+                const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+                recognition = new SpeechRecognition();
+                recognition.continuous = false;
+                recognition.interimResults = false;
+                recognition.lang = 'en-US';
+                
+                recognition.onresult = function(event) {
+                    const command = event.results[0][0].transcript.toLowerCase();
+                    processVoiceCommand(command);
+                };
+                
+                recognition.onerror = function(event) {
+                    console.error('Voice recognition error:', event.error);
+                    isListening = false;
+                    updateVoiceButton(false);
+                };
+                
+                recognition.onend = function() {
+                    isListening = false;
+                    updateVoiceButton(false);
+                };
+            }
+        }
+        
+        function toggleVoiceControl() {
+            if (!recognition) {
+                showToast('Voice control not supported', 'warning');
+                return;
+            }
+            
+            if (isListening) {
+                recognition.stop();
+                isListening = false;
+                updateVoiceButton(false);
+            } else {
+                recognition.start();
+                isListening = true;
+                updateVoiceButton(true);
+                showToast('🎤 Listening...', 'info');
+            }
+        }
+        
+        function updateVoiceButton(listening) {
+            const btn = document.getElementById('voiceButton');
+            if (listening) {
+                btn.classList.add('listening');
+            } else {
+                btn.classList.remove('listening');
+            }
+        }
+        
+        function processVoiceCommand(command) {
+            console.log('Voice command:', command);
+            command = command.toLowerCase().trim();
+            
+            if (currentMode === 'pregnancy') {
+                // English & Spanish pregnancy commands
+                if (command.includes('kick') || command.includes('movement') || command.includes('move') ||
+                    command.includes('patada') || command.includes('patad') || command.includes('movimiento') || 
+                    command.includes('movi') || command.includes('bebé') || command.includes('bebe')) {
+                    recordKick();
+                    showToast('👣 Kick recorded by voice!', 'success');
+                } else if (command.includes('start') || command.includes('begin') ||
+                          command.includes('iniciar') || command.includes('empezar')) {
+                    startKickSession();
+                } else if (command.includes('end') || command.includes('stop') ||
+                          command.includes('terminar') || command.includes('parar')) {
+                    endKickSession();
+                }
+            } else {
+                // English & Spanish baby commands
+                if ((command.includes('left') || command.includes('izq')) && 
+                    (command.includes('feed') || command.includes('side') || command.includes('pecho'))) {
+                    recordFeeding('left');
+                } else if ((command.includes('right') || command.includes('derech')) && 
+                          (command.includes('feed') || command.includes('side') || command.includes('pecho'))) {
+                    recordFeeding('right');
+                } else if (command === 'left' || command === 'izquierda') {
+                    recordFeeding('left');
+                } else if (command === 'right' || command === 'derecha') {
+                    recordFeeding('right');
+                } else if (command.includes('poop') || command.includes('popó') || command.includes('caca') ||
+                          command.includes('número dos') || command.includes('two')) {
+                    recordDiaper('poop');
+                } else if (command.includes('pee') || command.includes('pipí') || command.includes('pis') ||
+                          command.includes('wet') || command.includes('número uno') || command.includes('one')) {
+                    recordDiaper('pee');
+                }
+            }
+        }
+
+        // ==========================================
+        // TAB NAVIGATION
+        // ==========================================
+        
+        function switchTab(tabName) {
+            currentTab = tabName;
+            
+            // Update nav items
+            document.querySelectorAll('.nav-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            event.currentTarget.classList.add('active');
+            
+            // Show correct tab content
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            document.getElementById(tabName + 'Tab').classList.add('active');
+            
+            // Update tab-specific content
+            if (tabName === 'analytics') {
+                updateAnalytics();
+            } else if (tabName === 'memories') {
+                loadPhotoGallery();
+            } else if (tabName === 'connect') {
+                loadMessages();
+            }
+        }
+
+        // ==========================================
+        // MODE SWITCHING
+        // ==========================================
+        
+        function switchMode(mode) {
+            currentMode = mode;
+            localStorage.setItem('trackingMode', mode);
+            document.body.className = mode + '-mode';
+            
+            // Update buttons
+            document.getElementById('pregnancyModeBtn').classList.toggle('active', mode === 'pregnancy');
+            document.getElementById('babyModeBtn').classList.toggle('active', mode === 'baby');
+            
+            // Update header
+            document.getElementById('modeIcon').textContent = mode === 'pregnancy' ? '🤰' : '👶';
+            
+            // Refresh content
+            if (mode === 'pregnancy') {
+                initPregnancyMode();
+            } else {
+                initBabyMode();
+            }
+            
+            updateAnalytics();
+        }
+
+        // ==========================================
+        // PREGNANCY MODE
+        // ==========================================
+        
+        function initPregnancyMode() {
+            updateKickStats();
+            renderPregnancyLog();
+        }
+
+        function recordKick() {
+            if (!currentUser) {
+                showToast('Please set up your profile first', 'warning');
+                return;
+            }
+            
+            // Haptic feedback
+            if (navigator.vibrate) {
+                navigator.vibrate([50, 30, 50]); // Double vibration for kick
+            }
+            
+            const kick = {
+                timestamp: Date.now(),
+                parent: currentUser,
+                id: 'kick_' + Date.now()
+            };
+            
+            // Animation
+            const btn = document.getElementById('kickBtn');
+            btn.classList.add('pulse');
+            setTimeout(() => btn.classList.remove('pulse'), 500);
+            
+            // Save
+            if (kicksRef) {
+                const newRef = kicksRef.push();
+                kick.firebaseId = newRef.key;
+                newRef.set(kick);
+            }
+            kicks.push(kick);
+            saveLocalData();
+            
+            // Update session if active
+            if (kickSession.active) {
+                kickSession.kicks++;
+                document.getElementById('sessionKicks').textContent = kickSession.kicks;
+            }
+            
+            updateKickStats();
+            renderPregnancyLog();
+            showToast('👣 Kick recorded!', 'success');
+            
+            // Play sound
+            playKickSound();
+        }
+        
+        function startKickSession() {
+            kickSession = {
+                active: true,
+                startTime: Date.now(),
+                kicks: 0
+            };
+            document.getElementById('sessionKicks').textContent = '0';
+            showToast('⏱️ Counting session started', 'info');
+        }
+        
+        function endKickSession() {
+            if (kickSession.active) {
+                const duration = Math.floor((Date.now() - kickSession.startTime) / 1000);
+                showToast(`Session ended: ${kickSession.kicks} kicks in ${formatDuration(duration)}`, 'success');
+                
+                kickSession = {
+                    active: false,
+                    startTime: null,
+                    kicks: 0
+                };
+                
+                document.getElementById('sessionKicks').textContent = '0';
+                document.getElementById('sessionTimer').textContent = '00:00';
+            }
+        }
+        
+        function updateTimers() {
+            // Update kick session timer
+            if (kickSession.active) {
+                const elapsed = Math.floor((Date.now() - kickSession.startTime) / 1000);
+                document.getElementById('sessionTimer').textContent = formatDuration(elapsed);
+            }
+            
+            // Update contraction timer
+            if (contractionTimer.active) {
+                const elapsed = Math.floor((Date.now() - contractionTimer.startTime) / 1000);
+                document.getElementById('contractionTimer').textContent = formatDuration(elapsed);
+            }
+        }
+        
+        function formatDuration(seconds) {
+            const mins = Math.floor(seconds / 60);
+            const secs = seconds % 60;
+            return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+        }
+
+        function updateKickStats() {
+            const today = new Date().toDateString();
+            const todayKicks = kicks.filter(k => 
+                new Date(k.timestamp).toDateString() === today
+            );
+            
+            document.getElementById('kickCount').textContent = todayKicks.length;
+            document.getElementById('sessionTodayTotal').textContent = todayKicks.length;
+            
+            // Last hour
+            const oneHourAgo = Date.now() - (60 * 60 * 1000);
+            const lastHourKicks = todayKicks.filter(k => k.timestamp > oneHourAgo);
+            document.getElementById('lastHourKicks').textContent = lastHourKicks.length;
+            
+            // Daily goal
+            const goal = 10;
+            document.getElementById('dailyGoal').textContent = `${Math.min(todayKicks.length, goal)}/${goal}`;
+        }
+
+        function renderPregnancyLog() {
+            const logEl = document.getElementById('pregnancyActivityLog');
+            const today = new Date().toDateString();
+            const recentKicks = kicks
+                .filter(k => new Date(k.timestamp).toDateString() === today)
+                .slice(-5)
+                .reverse();
+            
+            if (recentKicks.length === 0) {
+                logEl.innerHTML = '<div class="loading">No kicks recorded today</div>';
+                return;
+            }
+            
+            logEl.innerHTML = recentKicks.map(kick => {
+                const parentBadge = kick.parent ? 
+                    `<span class="parent-badge ${kick.parent.role}">${kick.parent.name}</span>` : '';
+                
+                return `
+                    <div class="log-item">
+                        <div class="log-icon">👣</div>
+                        <div class="log-details">
+                            <div style="font-weight: 600;">
+                                Baby Kick ${parentBadge}
+                            </div>
+                            <div style="font-size: 12px; color: var(--text-light);">
+                                ${new Date(kick.timestamp).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
+                            </div>
+                        </div>
+                        <button class="log-delete" onclick="deleteKick('${kick.firebaseId || kick.id}')">✕</button>
+                    </div>
+                `;
+            }).join('');
+        }
+        
+        function deleteKick(id) {
+            if (confirm('Delete this kick?')) {
+                // Remove from Firebase
+                if (kicksRef && id.startsWith('-')) {
+                    kicksRef.child(id).remove();
+                }
+                
+                // Remove from local array
+                kicks = kicks.filter(k => k.firebaseId !== id && k.id !== id);
+                saveLocalData();
+                updateKickStats();
+                renderPregnancyLog();
+                showToast('Entry deleted', 'info');
+            }
+        }
+
+        // ==========================================
+        // BABY MODE
+        // ==========================================
+        
+        function initBabyMode() {
+            updateBabyStats();
+            renderBabyLog();
+        }
+
+        function recordFeeding(side) {
+            if (!currentUser) {
+                showToast('Please set up your profile first', 'warning');
+                return;
+            }
+            
+            if (navigator.vibrate) navigator.vibrate(50);
+            
+            const activity = {
+                type: 'feeding',
+                side: side,
+                timestamp: Date.now(),
+                parent: currentUser,
+                id: 'feed_' + Date.now()
+            };
+            
+            saveActivity(activity);
+            showToast(`🍼 ${side} side feeding recorded`, 'success');
+        }
+
+        function recordDiaper(type) {
+            if (!currentUser) {
+                showToast('Please set up your profile first', 'warning');
+                return;
+            }
+            
+            if (navigator.vibrate) navigator.vibrate(50);
+            
+            const activity = {
+                type: 'diaper',
+                diaperType: type,
+                timestamp: Date.now(),
+                parent: currentUser,
+                id: 'diaper_' + Date.now()
+            };
+            
+            saveActivity(activity);
+            const icon = type === 'pee' ? '💧' : '💩';
+            showToast(`${icon} Diaper recorded`, 'success');
+        }
+
+        function saveActivity(activity) {
+            if (activitiesRef) {
+                const newRef = activitiesRef.push();
+                activity.firebaseId = newRef.key;
+                newRef.set(activity);
+            }
+            activities.push(activity);
+            saveLocalData();
+            updateBabyStats();
+            renderBabyLog();
+        }
+
+        function updateBabyStats() {
+            const today = new Date().toDateString();
+            const todayActivities = activities.filter(a => 
+                new Date(a.timestamp).toDateString() === today
+            );
+            
+            const feedings = todayActivities.filter(a => a.type === 'feeding').length;
+            const diapers = todayActivities.filter(a => a.type === 'diaper').length;
+            
+            document.getElementById('todayFeedings').textContent = feedings;
+            document.getElementById('todayDiapers').textContent = diapers;
+        }
+
+        function renderBabyLog() {
+            const logEl = document.getElementById('babyActivityLog');
+            const today = new Date().toDateString();
+            const recentActivities = activities
+                .filter(a => new Date(a.timestamp).toDateString() === today)
+                .slice(-5)
+                .reverse();
+            
+            if (recentActivities.length === 0) {
+                logEl.innerHTML = '<div class="loading">No activities today</div>';
+                return;
+            }
+            
+            logEl.innerHTML = recentActivities.map(activity => {
+                let icon = '📝';
+                let title = 'Activity';
+                
+                if (activity.type === 'feeding') {
+                    icon = '🍼';
+                    title = `${activity.side} side feeding`;
+                } else if (activity.type === 'diaper') {
+                    icon = activity.diaperType === 'pee' ? '💧' : '💩';
+                    title = `${activity.diaperType} diaper`;
+                }
+                
+                const parentBadge = activity.parent ? 
+                    `<span class="parent-badge ${activity.parent.role}">${activity.parent.name}</span>` : '';
+                
+                return `
+                    <div class="log-item">
+                        <div class="log-icon">${icon}</div>
+                        <div class="log-details">
+                            <div style="font-weight: 600;">
+                                ${title} ${parentBadge}
+                            </div>
+                            <div style="font-size: 12px; color: var(--text-light);">
+                                ${new Date(activity.timestamp).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
+                            </div>
+                        </div>
+                        <button class="log-delete" onclick="deleteActivity('${activity.firebaseId || activity.id}')">✕</button>
+                    </div>
+                `;
+            }).join('');
+        }
+        
+        function deleteActivity(id) {
+            if (confirm('Delete this activity?')) {
+                // Remove from Firebase
+                if (activitiesRef && id.startsWith('-')) {
+                    activitiesRef.child(id).remove();
+                }
+                
+                // Remove from local array
+                activities = activities.filter(a => a.firebaseId !== id && a.id !== id);
+                saveLocalData();
+                updateBabyStats();
+                renderBabyLog();
+                showToast('Entry deleted', 'info');
+            }
+        }
+
+        // ==========================================
+        // ANALYTICS
+        // ==========================================
+        
+        let weekChart = null;
+        let heatmapChart = null;
+        
+        function initCharts() {
+            // Week chart
+            const weekCtx = document.getElementById('weekChart');
+            if (weekCtx) {
+                weekChart = new Chart(weekCtx, {
+                    type: 'bar',
+                    data: {
+                        labels: [],
+                        datasets: [{
+                            label: 'Daily Count',
+                            data: [],
+                            backgroundColor: 'rgba(155, 123, 184, 0.6)',
+                            borderColor: 'rgba(155, 123, 184, 1)',
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                ticks: {
+                                    stepSize: 5
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+            
+            // Heatmap chart
+            const heatmapCtx = document.getElementById('heatmapChart');
+            if (heatmapCtx) {
+                heatmapChart = new Chart(heatmapCtx, {
+                    type: 'line',
+                    data: {
+                        labels: Array.from({length: 24}, (_, i) => `${i}:00`),
+                        datasets: [{
+                            label: 'Hourly Activity',
+                            data: new Array(24).fill(0),
+                            backgroundColor: 'rgba(254, 197, 229, 0.3)',
+                            borderColor: 'rgba(254, 197, 229, 1)',
+                            borderWidth: 2,
+                            fill: true,
+                            tension: 0.4
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            y: {
+                                beginAtZero: true
+                            }
+                        }
+                    }
+                });
+            }
+        }
+        
+        function changePeriod(days) {
+            currentPeriod = days;
+            
+            // Update button states
+            document.querySelectorAll('.period-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            
+            updateAnalytics();
+        }
+        
+        function updateAnalytics() {
+            if (currentTab !== 'analytics') return;
+            
+            const data = currentMode === 'pregnancy' ? kicks : activities;
+            const now = new Date();
+            
+            // Calculate data for selected period
+            const labels = [];
+            const chartData = [];
+            
+            for (let i = currentPeriod - 1; i >= 0; i--) {
+                const date = new Date(now);
+                date.setDate(date.getDate() - i);
+                const dayData = data.filter(item => 
+                    new Date(item.timestamp).toDateString() === date.toDateString()
+                );
+                
+                // Format label based on period
+                if (currentPeriod <= 7) {
+                    labels.push(date.toLocaleDateString('en-US', { weekday: 'short' }));
+                } else {
+                    labels.push(date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }));
+                }
+                
+                chartData.push(dayData.length);
+            }
+            
+            // Update week chart
+            if (weekChart) {
+                weekChart.data.labels = labels;
+                weekChart.data.datasets[0].data = chartData;
+                weekChart.update();
+            }
+            
+            // Calculate hourly distribution
+            const hourlyData = new Array(24).fill(0);
+            const todayData = data.filter(item => 
+                new Date(item.timestamp).toDateString() === now.toDateString()
+            );
+            
+            todayData.forEach(item => {
+                const hour = new Date(item.timestamp).getHours();
+                hourlyData[hour]++;
+            });
+            
+            // Update heatmap
+            if (heatmapChart) {
+                heatmapChart.data.datasets[0].data = hourlyData;
+                heatmapChart.update();
+            }
+            
+            // Update insights
+            const yesterday = new Date(now);
+            yesterday.setDate(yesterday.getDate() - 1);
+            const yesterdayData = data.filter(item => 
+                new Date(item.timestamp).toDateString() === yesterday.toDateString()
+            );
+            
+            document.getElementById('yesterdayTotal').textContent = yesterdayData.length;
+            
+            const weekAvg = Math.round(chartData.reduce((a, b) => a + b, 0) / currentPeriod);
+            document.getElementById('weekAverage').textContent = weekAvg;
+            
+            // Find peak hour
+            const peakHour = hourlyData.indexOf(Math.max(...hourlyData));
+            document.getElementById('bestTime').textContent = peakHour >= 0 ? `${peakHour}:00` : '--';
+            
+            // Calculate trend
+            const halfPoint = Math.floor(chartData.length / 2);
+            const firstHalf = chartData.slice(0, halfPoint).reduce((a, b) => a + b, 0) / halfPoint || 0;
+            const secondHalf = chartData.slice(halfPoint).reduce((a, b) => a + b, 0) / (chartData.length - halfPoint) || 0;
+            const trend = secondHalf > firstHalf ? '📈 Up' : secondHalf < firstHalf ? '📉 Down' : '➡️ Stable';
+            document.getElementById('trend').textContent = trend;
+        }
+        
+        function exportPDF() {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            
+            // Add title
+            doc.setFontSize(20);
+            doc.text("Avi's Weekly Report", 20, 20);
+            
+            // Add date
+            doc.setFontSize(12);
+            doc.text(`Generated: ${new Date().toLocaleDateString()}`, 20, 30);
+            
+            // Add stats
+            doc.setFontSize(14);
+            doc.text("Weekly Statistics:", 20, 50);
+            
+            doc.setFontSize(12);
+            const stats = document.getElementById('weekAverage').textContent;
+            doc.text(`Daily Average: ${stats}`, 30, 60);
+            
+            const yesterday = document.getElementById('yesterdayTotal').textContent;
+            doc.text(`Yesterday: ${yesterday}`, 30, 70);
+            
+            const peak = document.getElementById('bestTime').textContent;
+            doc.text(`Peak Activity Time: ${peak}`, 30, 80);
+            
+            // Save
+            doc.save('avi-weekly-report.pdf');
+            showToast('📄 Report exported!', 'success');
+        }
+
+        // ==========================================
+        // MEMORIES & PHOTOS
+        // ==========================================
+        
+        function capturePhoto() {
+            document.getElementById('photoInput').click();
+        }
+        
+        function handlePhotoUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            // Compress image
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                compressImage(e.target.result, (compressed) => {
+                    const photo = {
+                        data: compressed,
+                        timestamp: Date.now(),
+                        parent: currentUser
+                    };
+                    
+                    if (photosRef) {
+                        photosRef.push(photo);
+                    }
+                    photos.push(photo);
+                    saveLocalData();
+                    
+                    showToast('📸 Photo saved!', 'success');
+                    loadPhotoGallery();
+                });
+            };
+            reader.readAsDataURL(file);
+        }
+        
+        function compressImage(dataUrl, callback) {
+            const img = new Image();
+            img.onload = function() {
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                
+                // Max 800px wide
+                const maxWidth = 800;
+                const scale = Math.min(maxWidth / img.width, 1);
+                canvas.width = img.width * scale;
+                canvas.height = img.height * scale;
+                
+                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                callback(canvas.toDataURL('image/jpeg', 0.7));
+            };
+            img.src = dataUrl;
+        }
+        
+        function loadPhotoGallery() {
+            const gallery = document.getElementById('photoGallery');
+            const recentPhotos = photos.slice(-9).reverse();
+            
+            if (recentPhotos.length === 0) {
+                gallery.innerHTML = '<div style="text-align: center; color: var(--text-light);">No photos yet</div>';
+                return;
+            }
+            
+            gallery.innerHTML = recentPhotos.map((photo, index) => `
+                <div class="photo-thumb" onclick="viewPhoto('${index}')">
+                    <img src="${photo.data}" alt="Memory">
+                </div>
+            `).join('');
+        }
+        
+        function viewPhoto(index) {
+            const photo = photos.slice(-9).reverse()[index];
+            if (photo) {
+                document.getElementById('photoViewerImg').src = photo.data;
+                document.getElementById('photoViewer').style.display = 'flex';
+            }
+        }
+        
+        function closePhotoViewer() {
+            document.getElementById('photoViewer').style.display = 'none';
+        }
+        
+        function addMilestone(type) {
+            const milestone = {
+                type: type,
+                timestamp: Date.now(),
+                parent: currentUser
+            };
+            
+            if (milestonesRef) {
+                milestonesRef.push(milestone);
+            }
+            milestones.push(milestone);
+            saveLocalData();
+            
+            showToast(`🎯 ${type} milestone added!`, 'success');
+            
+            // Update the milestone display
+            event.target.querySelector('.milestone-date').textContent = new Date().toLocaleDateString();
+        }
+
+        // ==========================================
+        // PARTNER CONNECTION
+        // ==========================================
+        
+        function sendLove() {
+            if (!currentUser) {
+                showToast('Please set up your profile first', 'warning');
+                return;
+            }
+            
+            const btn = document.getElementById('loveBtn');
+            btn.classList.add('pulse-animation');
+            setTimeout(() => btn.classList.remove('pulse-animation'), 1000);
+            
+            if (navigator.vibrate) {
+                navigator.vibrate([100, 50, 100, 50, 100]); // Heart beat pattern
+            }
+            
+            const love = {
+                type: 'love',
+                from: currentUser,
+                timestamp: Date.now()
+            };
+            
+            if (messagesRef) {
+                messagesRef.push(love);
+            }
+            messages.push(love);
+            saveLocalData();
+            renderMessages();
+            
+            showToast('❤️ Love sent!', 'success');
+        }
+        
+        function sendMessage() {
+            if (!currentUser) {
+                showToast('Please set up your profile first', 'warning');
+                return;
+            }
+            
+            const input = document.getElementById('messageInput');
+            const text = input.value.trim();
+            if (!text) return;
+            
+            const message = {
+                type: 'message',
+                text: text,
+                from: currentUser,
+                timestamp: Date.now()
+            };
+            
+            if (messagesRef) {
+                messagesRef.push(message);
+            }
+            messages.push(message);
+            saveLocalData();
+            input.value = '';
+            renderMessages();
+        }
+        
+        function loadMessages() {
+            renderMessages();
+        }
+        
+        function renderMessages() {
+            const messageList = document.getElementById('messageList');
+            const recentMessages = messages.slice(-10);
+            
+            messageList.innerHTML = recentMessages.map(msg => {
+                if (msg.type === 'love') {
+                    return `<div style="text-align: center; margin: 10px;">
+                        <span style="font-size: 30px;">❤️</span>
+                        <div style="font-size: 12px; color: var(--text-light);">
+                            ${msg.from ? msg.from.name : 'Someone'} sent love
+                        </div>
+                    </div>`;
+                }
+                
+                const isMe = msg.from && currentUser && msg.from.id === currentUser.id;
+                return `
+                    <div class="message-bubble ${isMe ? 'from-me' : 'from-partner'}">
+                        <div style="font-size: 14px;">${msg.text}</div>
+                        <div style="font-size: 10px; opacity: 0.8; margin-top: 4px;">
+                            ${msg.from ? msg.from.name : ''} • ${new Date(msg.timestamp).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+            
+            // Scroll to bottom
+            messageList.scrollTop = messageList.scrollHeight;
+        }
+        
+        // Contraction Timer
+        function toggleContraction() {
+            if (contractionTimer.active) {
+                // End contraction
+                const duration = Math.floor((Date.now() - contractionTimer.startTime) / 1000);
+                
+                const contractionList = document.getElementById('contractionList');
+                const newContraction = document.createElement('div');
+                newContraction.style.cssText = 'padding: 8px; background: var(--accent); border-radius: 8px; margin-bottom: 5px;';
+                newContraction.innerHTML = `
+                    <strong>Duration:</strong> ${formatDuration(duration)}<br>
+                    <small>${new Date().toLocaleTimeString()}</small>
+                `;
+                contractionList.insertBefore(newContraction, contractionList.firstChild);
+                
+                contractionTimer.active = false;
+                document.getElementById('contractionTimer').textContent = '00:00';
+                event.target.textContent = 'Start Contraction';
+                event.target.style.background = '';
+                
+                showToast(`Contraction lasted ${formatDuration(duration)}`, 'info');
+            } else {
+                // Start contraction
+                contractionTimer.active = true;
+                contractionTimer.startTime = Date.now();
+                event.target.textContent = 'End Contraction';
+                event.target.style.background = 'var(--danger)';
+            }
+        }
+        
+        // Notes
+        function saveNote() {
+            if (!currentUser) {
+                showToast('Please set up your profile first', 'warning');
+                return;
+            }
+            
+            const input = document.getElementById('notesInput');
+            const text = input.value.trim();
+            if (!text) return;
+            
+            const note = {
+                text: text,
+                timestamp: Date.now(),
+                parent: currentUser
+            };
+            
+            if (notesRef) {
+                notesRef.push(note);
+            }
+            notes.push(note);
+            saveLocalData();
+            
+            input.value = '';
+            showToast('📝 Note saved!', 'success');
+        }
+
+        // ==========================================
+        // UTILITIES
+        // ==========================================
+        
+        function updateDailyAffirmation() {
+            const today = new Date().getDate();
+            const affirmation = affirmations[Math.min(today - 1, affirmations.length - 1)];
+            document.getElementById('dailyAffirmation').textContent = affirmation;
+        }
+        
+        function updateConnectionStatus(online) {
+            const dot = document.querySelector('.connection-dot');
+            const text = document.getElementById('connectionText');
+            
+            if (online) {
+                dot.style.background = 'var(--success)';
+                text.textContent = 'Connected';
+            } else {
+                dot.style.background = 'var(--warning)';
+                text.textContent = 'Offline';
+            }
+        }
+        
+        function showToast(message, type = 'success') {
+            const toast = document.getElementById('toast');
+            const toastMessage = document.getElementById('toastMessage');
+            
+            toastMessage.textContent = message;
+            toast.className = 'toast show';
+            
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 3000);
+        }
+        
+        function saveLocalData() {
+            localStorage.setItem('babyTrackerKicks', JSON.stringify(kicks.slice(-500)));
+            localStorage.setItem('babyTrackerActivities', JSON.stringify(activities.slice(-500)));
+            localStorage.setItem('babyTrackerPhotos', JSON.stringify(photos.slice(-20)));
+            localStorage.setItem('babyTrackerMessages', JSON.stringify(messages.slice(-100)));
+            localStorage.setItem('babyTrackerNotes', JSON.stringify(notes.slice(-50)));
+        }
+        
+        function playKickSound() {
+            if (!audioContext) return;
+            
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            oscillator.frequency.value = 800;
+            oscillator.type = 'sine';
+            gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.1);
+            
+            oscillator.start(audioContext.currentTime);
+            oscillator.stop(audioContext.currentTime + 0.1);
+        }
+        
+        function setupFirebaseListeners() {
+            // Listen for kicks
+            kicksRef.limitToLast(100).on('child_added', (snapshot) => {
+                const kick = snapshot.val();
+                if (kick && !kicks.find(k => k.firebaseId === snapshot.key)) {
+                    kick.firebaseId = snapshot.key;
+                    kicks.push(kick);
+                    if (currentMode === 'pregnancy') {
+                        updateKickStats();
+                        renderPregnancyLog();
+                    }
+                }
+            });
+            
+            kicksRef.on('child_removed', (snapshot) => {
+                kicks = kicks.filter(k => k.firebaseId !== snapshot.key);
+                if (currentMode === 'pregnancy') {
+                    updateKickStats();
+                    renderPregnancyLog();
+                }
+            });
+            
+            // Listen for activities
+            activitiesRef.limitToLast(100).on('child_added', (snapshot) => {
+                const activity = snapshot.val();
+                if (activity && !activities.find(a => a.firebaseId === snapshot.key)) {
+                    activity.firebaseId = snapshot.key;
+                    activities.push(activity);
+                    if (currentMode === 'baby') {
+                        updateBabyStats();
+                        renderBabyLog();
+                    }
+                }
+            });
+            
+            activitiesRef.on('child_removed', (snapshot) => {
+                activities = activities.filter(a => a.firebaseId !== snapshot.key);
+                if (currentMode === 'baby') {
+                    updateBabyStats();
+                    renderBabyLog();
+                }
+            });
+            
+            // Listen for messages
+            messagesRef.limitToLast(50).on('child_added', (snapshot) => {
+                const message = snapshot.val();
+                if (message && !messages.find(m => m.timestamp === message.timestamp)) {
+                    messages.push(message);
+                    if (currentTab === 'connect') {
+                        renderMessages();
+                    }
+                    
+                    // Show notification if from partner
+                    if (currentUser && message.from && message.from.id !== currentUser.id) {
+                        if (message.type === 'love') {
+                            showToast(`❤️ ${message.from.name} sent you love!`, 'success');
+                            if (navigator.vibrate) {
+                                navigator.vibrate([100, 50, 100, 50, 100]);
+                            }
+                        } else {
+                            showToast(`💬 New message from ${message.from.name}`, 'info');
+                        }
+                    }
+                }
+            });
+            
+            // Listen for photos
+            photosRef.limitToLast(20).on('child_added', (snapshot) => {
+                const photo = snapshot.val();
+                if (photo && !photos.find(p => p.timestamp === photo.timestamp)) {
+                    photos.push(photo);
+                    if (currentTab === 'memories') {
+                        loadPhotoGallery();
+                    }
+                }
+            });
+        }
+        
+        // Initialize on load
+        window.addEventListener('load', init);
+    </script>
+        // ==========================================
+        // FIREBASE CONFIGURATION
+        // ==========================================
+        
+        // TODO: Replace with your Firebase config
+        const firebaseConfig = {
+            apiKey: "YOUR_API_KEY",
+            authDomain: "YOUR_AUTH_DOMAIN",
+            databaseURL: "YOUR_DATABASE_URL",
+            projectId: "YOUR_PROJECT_ID",
+            storageBucket: "YOUR_STORAGE_BUCKET",
+            messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+            appId: "YOUR_APP_ID"
+        };
 
         // Initialize Firebase
         let database = null;
