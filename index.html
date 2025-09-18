@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -755,6 +756,16 @@
                     </div>
                 </div>
 
+                <!-- Kick Activity Log -->
+                <div class="activity-log" style="background: var(--card-bg); border-radius: 20px; padding: 20px; box-shadow: var(--shadow); margin-top: 20px;">
+                    <div class="section-title">
+                        <span>📊</span> Recent Kick Activity
+                    </div>
+                    <div id="kickActivityLog" style="max-height: 300px; overflow-y: auto;">
+                        <div style="text-align: center; padding: 20px; color: var(--text-light);">Loading kicks...</div>
+                    </div>
+                </div>
+
                 <!-- Appointment Tracker -->
                 <div class="appointment-card">
                     <div class="section-title">
@@ -1105,6 +1116,9 @@
                     isOnline = snap.val() === true;
                 });
                 
+                // IMPORTANT: Set up Firebase listeners for existing data
+                setupFirebaseListeners();
+                
                 // Set up messaging
                 messaging.onMessage((payload) => {
                     console.log('Message received:', payload);
@@ -1114,6 +1128,121 @@
                 console.log('✅ STEP 2 COMPLETE: Firebase initialized');
             } catch (error) {
                 console.error('Firebase initialization error:', error);
+            }
+        }
+        
+        // Firebase Listeners for Real-time Data
+        function setupFirebaseListeners() {
+            console.log('Setting up Firebase listeners...');
+            
+            // Listen for ALL kicks (including historical)
+            kicksRef.on('value', (snapshot) => {
+                const data = snapshot.val();
+                if (data) {
+                    kicks = [];
+                    Object.keys(data).forEach(key => {
+                        const kick = data[key];
+                        kick.firebaseId = key;
+                        kicks.push(kick);
+                    });
+                    
+                    // Sort by timestamp
+                    kicks.sort((a, b) => a.timestamp - b.timestamp);
+                    
+                    console.log(`Loaded ${kicks.length} kicks from Firebase`);
+                    
+                    // Update displays
+                    if (currentMode === 'pregnancy') {
+                        updateKickCount();
+                        renderKickLog();
+                        updatePatternInsights();
+                        analyzeKickPatterns();
+                    }
+                    updateQuickStats();
+                    if (currentTab === 'analytics') {
+                        updateAnalytics();
+                    }
+                }
+            });
+            
+            // Listen for new kicks being added
+            kicksRef.on('child_added', (snapshot) => {
+                const kick = snapshot.val();
+                const key = snapshot.key;
+                
+                // Check if we already have this kick
+                if (!kicks.find(k => k.firebaseId === key)) {
+                    kick.firebaseId = key;
+                    kicks.push(kick);
+                    
+                    // If it's from partner, show notification
+                    if (currentUser && kick.parent && kick.parent.id !== currentUser.id) {
+                        showSmartAlert('info', '👣 Partner Update', 
+                            `${kick.parent.name} recorded a kick!`);
+                    }
+                    
+                    // Update displays
+                    if (currentMode === 'pregnancy') {
+                        updateKickCount();
+                        renderKickLog();
+                        updatePatternInsights();
+                    }
+                    updateQuickStats();
+                }
+            });
+            
+            // Listen for kicks being removed
+            kicksRef.on('child_removed', (snapshot) => {
+                kicks = kicks.filter(k => k.firebaseId !== snapshot.key);
+                if (currentMode === 'pregnancy') {
+                    updateKickCount();
+                    renderKickLog();
+                }
+                updateQuickStats();
+            });
+            
+            // Listen for ALL activities (including historical)
+            activitiesRef.on('value', (snapshot) => {
+                const data = snapshot.val();
+                if (data) {
+                    activities = [];
+                    Object.keys(data).forEach(key => {
+                        const activity = data[key];
+                        activity.firebaseId = key;
+                        activities.push(activity);
+                    });
+                    
+                    // Sort by timestamp
+                    activities.sort((a, b) => a.timestamp - b.timestamp);
+                    
+                    console.log(`Loaded ${activities.length} activities from Firebase`);
+                    
+                    // Update displays
+                    if (currentMode === 'baby') {
+                        refreshLogs();
+                        analyzeBabyPatterns();
+                    }
+                    updateQuickStats();
+                    if (currentTab === 'analytics') {
+                        updateAnalytics();
+                    }
+                }
+            });
+            
+            // Listen for appointments
+            if (appointmentsRef) {
+                appointmentsRef.on('value', (snapshot) => {
+                    const data = snapshot.val();
+                    if (data) {
+                        appointments = [];
+                        Object.keys(data).forEach(key => {
+                            const apt = data[key];
+                            apt.firebaseId = key;
+                            appointments.push(apt);
+                        });
+                        renderAppointments();
+                    }
+                });
             }
         }
 
@@ -1264,58 +1393,131 @@
         
         function updatePatternInsights() {
             const insightsEl = document.getElementById('patternInsights');
+            if (!insightsEl) return;
+            
             const insights = [];
             
-            // Most active time
-            if (kicks.length > 10) {
+            // Calculate insights from actual data
+            if (kicks.length > 0) {
+                // Most active time of day
                 const hourCounts = {};
                 kicks.forEach(k => {
                     const hour = new Date(k.timestamp).getHours();
                     hourCounts[hour] = (hourCounts[hour] || 0) + 1;
                 });
                 
-                const maxHour = Object.keys(hourCounts).reduce((a, b) => 
-                    hourCounts[a] > hourCounts[b] ? a : b
+                if (Object.keys(hourCounts).length > 0) {
+                    const maxHour = Object.keys(hourCounts).reduce((a, b) => 
+                        hourCounts[a] > hourCounts[b] ? a : b
+                    );
+                    
+                    const timeOfDay = maxHour < 12 ? 'morning' : maxHour < 17 ? 'afternoon' : 'evening';
+                    insights.push({
+                        icon: '⏰',
+                        text: `Most active in the ${timeOfDay} (around ${maxHour}:00)`
+                    });
+                }
+                
+                // Average kicks per day
+                const days = {};
+                kicks.forEach(k => {
+                    const day = new Date(k.timestamp).toDateString();
+                    days[day] = (days[day] || 0) + 1;
+                });
+                
+                const avgKicksPerDay = Math.round(kicks.length / Object.keys(days).length);
+                insights.push({
+                    icon: '📊',
+                    text: `Average ${avgKicksPerDay} kicks per day`
+                });
+                
+                // Today's progress
+                const today = new Date().toDateString();
+                const todayKicks = kicks.filter(k => 
+                    new Date(k.timestamp).toDateString() === today
                 );
                 
-                insights.push({
-                    icon: '⏰',
-                    text: `Most active around ${maxHour}:00`
-                });
-            }
-            
-            // Average session duration
-            if (patterns.averageKickTime) {
-                insights.push({
-                    icon: '⏱️',
-                    text: `Usually reaches 10 kicks in ${patterns.averageKickTime} minutes`
-                });
-            }
-            
-            // Today's status
-            const today = new Date().toDateString();
-            const todayKicks = kicks.filter(k => 
-                new Date(k.timestamp).toDateString() === today
-            );
-            
-            if (todayKicks.length > 0) {
-                const lastKick = new Date(todayKicks[todayKicks.length - 1].timestamp);
-                const minutesAgo = Math.floor((Date.now() - lastKick) / 60000);
+                if (todayKicks.length > 0) {
+                    const lastKick = new Date(todayKicks[todayKicks.length - 1].timestamp);
+                    const minutesAgo = Math.floor((Date.now() - lastKick) / 60000);
+                    
+                    if (minutesAgo < 60) {
+                        insights.push({
+                            icon: '👣',
+                            text: `Last movement ${minutesAgo} minutes ago`
+                        });
+                    } else {
+                        const hoursAgo = Math.floor(minutesAgo / 60);
+                        insights.push({
+                            icon: '👣',
+                            text: `Last movement ${hoursAgo} hour${hoursAgo > 1 ? 's' : ''} ago`
+                        });
+                    }
+                }
                 
-                insights.push({
-                    icon: '👣',
-                    text: `Last movement ${minutesAgo} minutes ago`
-                });
+                // Pattern detection
+                if (patterns.averageKickTime) {
+                    insights.push({
+                        icon: '⏱️',
+                        text: `Usually reaches 10 kicks in ${patterns.averageKickTime} minutes`
+                    });
+                }
+                
+                // Weekly trend
+                const thisWeek = kicks.filter(k => 
+                    new Date(k.timestamp) > new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
+                ).length;
+                const lastWeek = kicks.filter(k => {
+                    const time = new Date(k.timestamp);
+                    const twoWeeksAgo = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000);
+                    const oneWeekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+                    return time > twoWeeksAgo && time < oneWeekAgo;
+                }).length;
+                
+                if (lastWeek > 0) {
+                    const trend = thisWeek > lastWeek ? '📈 increasing' : 
+                                 thisWeek < lastWeek ? '📉 decreasing' : '➡️ stable';
+                    insights.push({
+                        icon: '📈',
+                        text: `Activity ${trend} vs last week`
+                    });
+                }
+                
+                // Active periods detection
+                const yesterday = new Date();
+                yesterday.setDate(yesterday.getDate() - 1);
+                const yesterdayKicks = kicks.filter(k => 
+                    new Date(k.timestamp).toDateString() === yesterday.toDateString()
+                );
+                
+                if (yesterdayKicks.length > 0) {
+                    insights.push({
+                        icon: '📅',
+                        text: `${yesterdayKicks.length} kicks yesterday`
+                    });
+                }
             }
             
-            // Render insights
+            // Render insights or show placeholder
             if (insights.length > 0) {
-                insightsEl.innerHTML = insights.map(insight => `
-                    <div class="pattern-insight">
-                        <div class="pattern-icon">${insight.icon}</div>
-                        <div class="pattern-text">${insight.text}</div>
+                insightsEl.innerHTML = insights.slice(0, 4).map(insight => `
+                    <div class="pattern-insight" style="display: flex; align-items: center; padding: 10px; background: var(--background); border-radius: 10px; margin-bottom: 8px; cursor: default;">
+                        <div class="pattern-icon" style="font-size: 20px; margin-right: 10px;">${insight.icon}</div>
+                        <div class="pattern-text" style="flex: 1; font-size: 14px;">${insight.text}</div>
                     </div>
                 `).join('');
+            } else {
+                // No data yet
+                insightsEl.innerHTML = `
+                    <div class="pattern-insight" style="display: flex; align-items: center; padding: 10px; background: var(--background); border-radius: 10px; margin-bottom: 8px;">
+                        <div class="pattern-icon" style="font-size: 20px; margin-right: 10px;">📊</div>
+                        <div class="pattern-text" style="flex: 1; font-size: 14px;">Start recording kicks to see patterns</div>
+                    </div>
+                    <div class="pattern-insight" style="display: flex; align-items: center; padding: 10px; background: var(--background); border-radius: 10px; margin-bottom: 8px;">
+                        <div class="pattern-icon" style="font-size: 20px; margin-right: 10px;">💡</div>
+                        <div class="pattern-text" style="flex: 1; font-size: 14px;">Insights will appear after tracking</div>
+                    </div>
+                `;
             }
         }
 
@@ -1420,7 +1622,23 @@
         function init() {
             checkUserSetup();
             checkNotificationPermission();
-            loadLocalData();
+            
+            // If Firebase is configured, wait for it to load data
+            if (firebaseConfig.apiKey && firebaseConfig.apiKey !== "YOUR_API_KEY") {
+                console.log('Waiting for Firebase data...');
+                // Firebase listeners will handle loading and rendering
+            } else {
+                // No Firebase, load from local storage
+                loadLocalData();
+                if (currentMode === 'pregnancy') {
+                    updateKickCount();
+                    renderKickLog();
+                    updatePatternInsights();
+                } else {
+                    refreshLogs();
+                }
+            }
+            
             updateQuickStats();
             
             // Start pattern analysis
@@ -1531,12 +1749,25 @@
             btn.classList.add('pulse');
             setTimeout(() => btn.classList.remove('pulse'), 500);
             
-            // Save
+            // Save to Firebase (this is the key part!)
             if (kicksRef) {
-                kicksRef.push(kick);
+                kicksRef.push(kick).then(() => {
+                    console.log('Kick saved to Firebase');
+                }).catch((error) => {
+                    console.error('Firebase save failed:', error);
+                    // Fallback to local storage
+                    kicks.push(kick);
+                    saveLocalData();
+                    updateKickCount();
+                    renderKickLog();
+                });
+            } else {
+                // No Firebase, save locally
+                kicks.push(kick);
+                saveLocalData();
+                updateKickCount();
+                renderKickLog();
             }
-            kicks.push(kick);
-            saveLocalData();
             
             // Update displays
             updateKickCount();
@@ -1553,6 +1784,58 @@
             );
             
             document.getElementById('kickCount').textContent = todayKicks.length;
+        }
+        
+        function renderKickLog() {
+            const logEl = document.getElementById('kickActivityLog');
+            if (!logEl) return;
+            
+            const today = new Date().toDateString();
+            const recentKicks = kicks
+                .filter(k => new Date(k.timestamp).toDateString() === today)
+                .slice(-20)
+                .reverse();
+            
+            if (recentKicks.length === 0) {
+                logEl.innerHTML = '<div style="text-align: center; padding: 20px; color: var(--text-light);">No kicks recorded today</div>';
+                return;
+            }
+            
+            logEl.innerHTML = recentKicks.map(kick => {
+                const parentBadge = kick.parent ? 
+                    `<span class="parent-badge" style="display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 10px; margin-left: 8px; font-weight: 600; background: ${kick.parent.role === 'mom' ? 'var(--mom-color)' : 'var(--dad-color)'}; color: white;">${kick.parent.name}</span>` : 
+                    '<span style="font-size: 10px; color: var(--text-light); margin-left: 8px;">(Unknown)</span>';
+                
+                const time = new Date(kick.timestamp);
+                const timeStr = time.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+                
+                return `
+                    <div style="display: flex; align-items: center; padding: 12px; margin-bottom: 8px; background: var(--background); border-radius: 12px; animation: slideIn 0.3s ease;">
+                        <div style="font-size: 20px; margin-right: 12px; width: 30px; text-align: center;">👣</div>
+                        <div style="flex: 1;">
+                            <div style="font-weight: 600;">
+                                Baby Kick ${parentBadge}
+                            </div>
+                            <div style="font-size: 12px; color: var(--text-light);">
+                                ${timeStr}
+                            </div>
+                        </div>
+                        ${kick.firebaseId ? `<button onclick="deleteKick('${kick.firebaseId}')" style="background: none; border: none; color: var(--text-light); cursor: pointer; padding: 5px; font-size: 18px;">✕</button>` : ''}
+                    </div>
+                `;
+            }).join('');
+        }
+        
+        function deleteKick(firebaseId) {
+            if (confirm('Delete this kick?')) {
+                if (kicksRef && firebaseId) {
+                    kicksRef.child(firebaseId).remove().then(() => {
+                        showToast('Kick deleted', 'info');
+                    }).catch((error) => {
+                        console.error('Delete failed:', error);
+                    });
+                }
+            }
         }
         
         function toggleFeeding(side) {
