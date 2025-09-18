@@ -1167,36 +1167,37 @@
         }
 
         function renderKickLog() {
-            const logEl = document.getElementById('kickLog');
-            const today = new Date().toDateString();
-            const todayKicks = kicks
-                .filter(k => new Date(k.timestamp).toDateString() === today)
-                .slice(-10)
-                .reverse();
-            
-            if (todayKicks.length === 0) {
-                logEl.innerHTML = '<div style="text-align: center; padding: 20px; color: var(--text-light);">No kicks recorded today</div>';
-                return;
-            }
-            
-            logEl.innerHTML = todayKicks.map(kick => {
-                const time = new Date(kick.timestamp).toLocaleTimeString('en-US', 
-                    { hour: 'numeric', minute: '2-digit' });
-                const parent = kick.parent ? kick.parent.name : 'Unknown';
-                const badge = kick.parent ? 
-                    `<span style="display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 10px; margin-left: 8px; background: ${kick.parent.role === 'mom' ? 'var(--mom-color)' : 'var(--dad-color)'}; color: white;">${parent}</span>` : '';
-                
-                return `
-                    <div style="display: flex; align-items: center; padding: 12px; margin-bottom: 8px; background: var(--accent); border-radius: 12px;">
-                        <div style="font-size: 20px; margin-right: 12px;">👣</div>
-                        <div style="flex: 1;">
-                            <div style="font-weight: 600;">Kick recorded ${badge}</div>
-                            <div style="font-size: 12px; color: var(--text-light);">${time}</div>
-                        </div>
-                    </div>
-                `;
-            }).join('');
-        }
+    const logEl = document.getElementById('kickLog');
+    const today = new Date().toDateString();
+    const todayKicks = kicks
+        .filter(k => new Date(k.timestamp).toDateString() === today)
+        .slice(-10)
+        .reverse();
+    
+    if (todayKicks.length === 0) {
+        logEl.innerHTML = '<div style="text-align: center; padding: 20px; color: var(--text-light);">No kicks recorded today</div>';
+        return;
+    }
+    
+    logEl.innerHTML = todayKicks.map(kick => {
+        const time = new Date(kick.timestamp).toLocaleTimeString('en-US', 
+            { hour: 'numeric', minute: '2-digit' });
+        const parent = kick.parent ? kick.parent.name : 'Unknown';
+        const badge = kick.parent ? 
+            `<span style="display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 10px; margin-left: 8px; background: ${kick.parent.role === 'mom' ? 'var(--mom-color)' : 'var(--dad-color)'}; color: white;">${parent}</span>` : '';
+        
+        return `
+            <div style="display: flex; align-items: center; padding: 12px; margin-bottom: 8px; background: var(--accent); border-radius: 12px;">
+                <div style="font-size: 20px; margin-right: 12px;">👣</div>
+                <div style="flex: 1;">
+                    <div style="font-weight: 600;">Kick recorded ${badge}</div>
+                    <div style="font-size: 12px; color: var(--text-light);">${time}</div>
+                </div>
+                <button onclick="deleteKick('${kick.firebaseId || kick.id}')" style="background: none; border: none; color: var(--text-light); cursor: pointer; padding: 5px; font-size: 18px; transition: color 0.3s ease;">✕</button>
+            </div>
+        `;
+    }).join('');
+}
 
         function updateAnalytics() {
             // Weekly trend
