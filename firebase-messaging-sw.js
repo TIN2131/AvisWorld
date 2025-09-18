@@ -4,12 +4,12 @@ importScripts('https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging-comp
 
 // Initialize Firebase in the service worker
 firebase.initializeApp({
-    apiKey: "YOUR_API_KEY",
-    authDomain: "YOUR_AUTH_DOMAIN",
-    projectId: "YOUR_PROJECT_ID",
-    storageBucket: "YOUR_STORAGE_BUCKET",
-    messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-    appId: "YOUR_APP_ID"
+    apiKey: "AIzaSyCOyRtkQfHK593CfOwQe33on5mUEPYduEc",
+  authDomain: "avi-tracker.firebaseapp.com",
+  projectId: "avi-tracker",
+  storageBucket: "avi-tracker.firebasestorage.app",
+  messagingSenderId: "783062575404",
+  appId: "1:783062575404:web:2ce2e7812bec4b2d4ee489"
 });
 
 const messaging = firebase.messaging();
