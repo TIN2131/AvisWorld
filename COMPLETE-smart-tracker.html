@@ -1,0 +1,2378 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Avi's Journey - Smart Tracker</title>
+    <link rel="manifest" href="manifest.json">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="Avi Tracker">
+    <meta name="theme-color" content="#9b7bb8">
+    
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging-compat.js"></script>
+    
+    <!-- Chart.js for Analytics -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- jsPDF for PDF exports -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        :root {
+            --primary: #9b7bb8;
+            --primary-light: #c8b6db;
+            --primary-dark: #7a5a99;
+            --accent: #e6d7f3;
+            --background: #f9f5fc;
+            --card-bg: #ffffff;
+            --text: #4a4a4a;
+            --text-light: #8a8a8a;
+            --success: #8bc34a;
+            --warning: #ffc107;
+            --info: #64b5f6;
+            --danger: #f44336;
+            --pink: #ff6b9d;
+            --blue: #4dabf7;
+            --shadow: 0 4px 6px rgba(155, 123, 184, 0.1);
+            --shadow-lg: 0 10px 25px rgba(155, 123, 184, 0.15);
+            --mom-color: #ff6b9d;
+            --dad-color: #4dabf7;
+            --pregnancy-color: #fec5e5;
+            --feeding-color: #87ceeb;
+            --diaper-pee: #ffe8a1;
+            --diaper-poop: #d4a373;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: linear-gradient(135deg, var(--background) 0%, #f0e6f7 100%);
+            color: var(--text);
+            min-height: 100vh;
+            overflow-x: hidden;
+            padding-bottom: 70px;
+        }
+
+        .container {
+            max-width: 480px;
+            margin: 0 auto;
+            padding: 20px;
+            padding-bottom: 100px;
+        }
+
+        /* Quick Stats Widget */
+        .quick-stats-widget {
+            background: linear-gradient(135deg, var(--primary-light) 0%, var(--primary) 100%);
+            color: white;
+            padding: 15px;
+            border-radius: 20px;
+            margin-bottom: 20px;
+            box-shadow: var(--shadow-lg);
+        }
+
+        .quick-stats-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+            text-align: center;
+        }
+
+        .quick-stat {
+            padding: 10px 5px;
+        }
+
+        .quick-stat-value {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 4px;
+        }
+
+        .quick-stat-label {
+            font-size: 10px;
+            opacity: 0.9;
+            text-transform: uppercase;
+        }
+
+        /* Smart Alert Card */
+        .smart-alert {
+            background: linear-gradient(135deg, var(--warning) 0%, #ffb300 100%);
+            color: white;
+            padding: 15px;
+            border-radius: 15px;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            animation: slideIn 0.5s ease;
+        }
+
+        .smart-alert.success {
+            background: linear-gradient(135deg, var(--success) 0%, #7cb342 100%);
+        }
+
+        .smart-alert.info {
+            background: linear-gradient(135deg, var(--info) 0%, #42a5f5 100%);
+        }
+
+        .smart-alert-icon {
+            font-size: 24px;
+        }
+
+        .smart-alert-content {
+            flex: 1;
+        }
+
+        .smart-alert-title {
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .smart-alert-message {
+            font-size: 12px;
+            opacity: 0.95;
+        }
+
+        /* Appointment Tracker */
+        .appointment-card {
+            background: var(--card-bg);
+            border-radius: 20px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: var(--shadow);
+        }
+
+        .appointment-item {
+            display: flex;
+            align-items: center;
+            padding: 12px;
+            background: var(--accent);
+            border-radius: 12px;
+            margin-bottom: 10px;
+        }
+
+        .appointment-icon {
+            font-size: 20px;
+            margin-right: 12px;
+        }
+
+        .appointment-details {
+            flex: 1;
+        }
+
+        .appointment-date {
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .appointment-notes {
+            font-size: 12px;
+            color: var(--text-light);
+        }
+
+        /* Kick Session Progress */
+        .kick-progress {
+            background: var(--card-bg);
+            border-radius: 20px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: var(--shadow);
+        }
+
+        .progress-bar {
+            height: 30px;
+            background: var(--accent);
+            border-radius: 15px;
+            overflow: hidden;
+            margin-bottom: 10px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--pregnancy-color) 0%, #ff7eb3 100%);
+            border-radius: 15px;
+            transition: width 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+        }
+
+        .kick-goal-info {
+            display: flex;
+            justify-content: space-between;
+            font-size: 12px;
+            color: var(--text-light);
+        }
+
+        /* Notification Permission Banner */
+        .notification-banner {
+            background: linear-gradient(135deg, var(--info) 0%, #42a5f5 100%);
+            color: white;
+            padding: 15px;
+            border-radius: 15px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .notification-banner button {
+            background: white;
+            color: var(--info);
+            border: none;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        /* Pattern Analysis Card */
+        .pattern-card {
+            background: var(--card-bg);
+            border-radius: 20px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: var(--shadow);
+        }
+
+        .pattern-insight {
+            display: flex;
+            align-items: center;
+            padding: 10px;
+            background: var(--background);
+            border-radius: 10px;
+            margin-bottom: 8px;
+        }
+
+        .pattern-icon {
+            font-size: 20px;
+            margin-right: 10px;
+        }
+
+        .pattern-text {
+            flex: 1;
+            font-size: 14px;
+        }
+
+        /* Setup Modal */
+        .setup-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+        }
+
+        .setup-content {
+            background: var(--card-bg);
+            padding: 30px;
+            border-radius: 20px;
+            max-width: 400px;
+            width: 90%;
+            text-align: center;
+            animation: fadeIn 0.5s ease;
+        }
+
+        /* Bottom Navigation */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: var(--card-bg);
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            padding: 8px 0;
+            z-index: 900;
+        }
+
+        .nav-item {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            color: var(--text-light);
+        }
+
+        .nav-item.active {
+            color: var(--primary);
+        }
+
+        .nav-item .icon {
+            font-size: 24px;
+            margin-bottom: 4px;
+        }
+
+        .nav-item .label {
+            font-size: 11px;
+            font-weight: 600;
+        }
+
+        /* Tab Content */
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateX(-20px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        /* Header */
+        .header {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: white;
+            padding: 20px 20px 25px;
+            margin: -20px -20px 20px -20px;
+            text-align: center;
+            border-radius: 0 0 30px 30px;
+            box-shadow: var(--shadow-lg);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .header h1 {
+            font-size: 24px;
+            margin-bottom: 5px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .header .subtitle {
+            opacity: 0.9;
+            font-size: 12px;
+            position: relative;
+            z-index: 1;
+            margin-bottom: 15px;
+        }
+
+        .baby-icon {
+            font-size: 32px;
+            margin-bottom: 8px;
+        }
+
+        /* Mode Switcher */
+        .mode-switcher {
+            display: flex;
+            background: rgba(255,255,255,0.2);
+            border-radius: 25px;
+            padding: 4px;
+            position: relative;
+            z-index: 2;
+            margin: 0 auto;
+            width: fit-content;
+        }
+
+        .mode-btn {
+            padding: 8px 20px;
+            border: none;
+            background: transparent;
+            color: rgba(255,255,255,0.8);
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .mode-btn.active {
+            background: white;
+            color: var(--primary-dark);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        /* Mode Content Display */
+        .pregnancy-mode-content {
+            display: none;
+        }
+
+        .baby-mode-content {
+            display: none;
+        }
+
+        body.pregnancy-mode .pregnancy-mode-content {
+            display: block;
+        }
+
+        body.baby-mode .baby-mode-content {
+            display: block;
+        }
+
+        /* Kick Counter */
+        .kick-counter-card {
+            background: var(--card-bg);
+            border-radius: 25px;
+            padding: 25px;
+            box-shadow: var(--shadow-lg);
+            text-align: center;
+            margin-bottom: 20px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .kick-count-display {
+            font-size: 72px;
+            font-weight: bold;
+            color: var(--pregnancy-color);
+            line-height: 1;
+            margin-bottom: 10px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .kick-btn {
+            width: 150px;
+            height: 150px;
+            border-radius: 50%;
+            border: none;
+            background: linear-gradient(135deg, var(--pregnancy-color) 0%, #ff9ece 100%);
+            color: white;
+            font-size: 60px;
+            cursor: pointer;
+            box-shadow: 0 8px 25px rgba(254, 197, 229, 0.4);
+            transition: all 0.3s ease;
+            position: relative;
+            margin: 20px auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .kick-btn:active {
+            transform: scale(0.95);
+        }
+
+        .kick-btn.pulse {
+            animation: kickPulse 0.5s ease;
+        }
+
+        @keyframes kickPulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+
+        /* All other existing styles remain the same... */
+        
+        /* Feeding Timer Card */
+        .feeding-timer-card {
+            background: var(--card-bg);
+            border-radius: 20px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: var(--shadow);
+        }
+
+        .feeding-timer-display {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .feeding-side {
+            text-align: center;
+            padding: 15px;
+            background: var(--accent);
+            border-radius: 15px;
+        }
+
+        .feeding-side.active {
+            background: linear-gradient(135deg, var(--feeding-color) 0%, #6bb6d6 100%);
+            color: white;
+        }
+
+        /* Activity Log */
+        .activity-log {
+            background: var(--card-bg);
+            border-radius: 20px;
+            padding: 20px;
+            box-shadow: var(--shadow);
+            margin-top: 25px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .log-tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .log-tab {
+            flex: 1;
+            padding: 8px;
+            border: none;
+            background: var(--accent);
+            border-radius: 10px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .log-tab.active {
+            background: var(--primary);
+            color: white;
+        }
+
+        .log-content {
+            display: none;
+        }
+
+        .log-content.active {
+            display: block;
+        }
+
+        /* Section Title */
+        .section-title {
+            font-size: 18px;
+            color: var(--primary-dark);
+            margin-bottom: 15px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* Buttons */
+        .btn {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 12px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: white;
+        }
+
+        /* Toast */
+        .toast {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%) translateY(-100px);
+            background: var(--primary);
+            color: white;
+            padding: 15px 25px;
+            border-radius: 50px;
+            box-shadow: var(--shadow-lg);
+            z-index: 1000;
+            opacity: 0;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .toast.show {
+            transform: translateX(-50%) translateY(0);
+            opacity: 1;
+        }
+
+        /* Other essential styles */
+        .parent-badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 10px;
+            margin-left: 8px;
+            font-weight: 600;
+        }
+
+        .parent-badge.mom {
+            background: var(--mom-color);
+            color: white;
+        }
+
+        .parent-badge.dad {
+            background: var(--dad-color);
+            color: white;
+        }
+    </style>
+</head>
+<body class="pregnancy-mode">
+    <!-- User Setup Modal -->
+    <div id="setupModal" class="setup-modal" style="display: none;">
+        <div class="setup-content">
+            <h2 style="color: var(--primary); margin-bottom: 20px;">👶 Welcome to Avi's Smart Tracker!</h2>
+            <p style="margin-bottom: 20px; color: var(--text-light);">Let's personalize your experience</p>
+            
+            <input type="text" id="setupName" placeholder="Your name (e.g., Tavo or Ingrid)" style="width: 100%; padding: 12px; border: 2px solid var(--accent); border-radius: 10px; margin-bottom: 20px; font-size: 16px;">
+            
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px;">
+                <button onclick="setupUser('mom')" class="btn" style="background: var(--mom-color); color: white;">
+                    👩 Mom
+                </button>
+                <button onclick="setupUser('dad')" class="btn" style="background: var(--dad-color); color: white;">
+                    👨 Dad
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <div class="baby-icon" id="modeIcon">🤰</div>
+            <h1>Avi's Smart Journey</h1>
+            <div class="subtitle" id="modeSubtitle">AI-Powered Tracking</div>
+            
+            <!-- Mode Switcher -->
+            <div class="mode-switcher">
+                <button class="mode-btn active" id="pregnancyModeBtn" onclick="switchMode('pregnancy')">
+                    <span>🤰</span>
+                    <span>Pregnancy</span>
+                </button>
+                <button class="mode-btn" id="babyModeBtn" onclick="switchMode('baby')">
+                    <span>👶</span>
+                    <span>Baby Care</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- HOME TAB -->
+        <div id="homeTab" class="tab-content active">
+            <!-- Notification Permission Banner -->
+            <div id="notificationBanner" class="notification-banner" style="display: none;">
+                <span style="font-size: 20px;">🔔</span>
+                <div style="flex: 1;">
+                    <div style="font-weight: 600;">Enable Smart Notifications</div>
+                    <div style="font-size: 12px; opacity: 0.9;">Get reminders for feedings, diaper changes, and kick counting</div>
+                </div>
+                <button onclick="requestNotificationPermission()">Enable</button>
+            </div>
+
+            <!-- Quick Stats Widget -->
+            <div class="quick-stats-widget">
+                <div class="quick-stats-grid">
+                    <div class="quick-stat">
+                        <div class="quick-stat-value" id="quickKicks">0</div>
+                        <div class="quick-stat-label">Kicks</div>
+                    </div>
+                    <div class="quick-stat">
+                        <div class="quick-stat-value" id="quickFeedings">0</div>
+                        <div class="quick-stat-label">Feeds</div>
+                    </div>
+                    <div class="quick-stat">
+                        <div class="quick-stat-value" id="quickDiapers">0</div>
+                        <div class="quick-stat-label">Diapers</div>
+                    </div>
+                    <div class="quick-stat">
+                        <div class="quick-stat-value" id="quickTime">--:--</div>
+                        <div class="quick-stat-label">Last</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Smart Alerts Section -->
+            <div id="smartAlerts"></div>
+
+            <!-- PREGNANCY MODE HOME -->
+            <div class="pregnancy-mode-content">
+                <!-- Kick Progress Tracker -->
+                <div class="kick-progress">
+                    <div class="section-title">
+                        <span>🎯</span> Daily Kick Goal Progress
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="kickProgressBar" style="width: 0%">
+                            0 / 10
+                        </div>
+                    </div>
+                    <div class="kick-goal-info">
+                        <span id="kickGoalStatus">Keep going! You need 10 kicks</span>
+                        <span id="kickTimeEstimate">Avg time: --</span>
+                    </div>
+                </div>
+
+                <!-- Kick Counter -->
+                <div class="kick-counter-card">
+                    <div class="kick-count-display" id="kickCount">0</div>
+                    <div style="font-size: 14px; color: var(--text-light); margin-bottom: 20px;">Kicks Today</div>
+                    <button class="kick-btn" id="kickBtn" onclick="recordKick()">
+                        👣
+                    </button>
+                    <div id="kickSessionInfo" style="margin-top: 15px; padding: 10px; background: var(--accent); border-radius: 10px; display: none;">
+                        <div style="font-size: 14px; font-weight: 600; margin-bottom: 5px;">Active Session</div>
+                        <div style="font-size: 12px; color: var(--text-light);">
+                            <span id="sessionKickCount">0</span> kicks in <span id="sessionDuration">00:00</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Pattern Analysis -->
+                <div class="pattern-card">
+                    <div class="section-title">
+                        <span>🧠</span> Smart Insights
+                    </div>
+                    <div id="patternInsights">
+                        <div class="pattern-insight">
+                            <div class="pattern-icon">⏰</div>
+                            <div class="pattern-text">Start tracking to see patterns</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Appointment Tracker -->
+                <div class="appointment-card">
+                    <div class="section-title">
+                        <span>🏥</span> Appointments
+                    </div>
+                    <div id="appointmentList">
+                        <div class="appointment-item">
+                            <div class="appointment-icon">📅</div>
+                            <div class="appointment-details">
+                                <div class="appointment-date">Next OB Visit</div>
+                                <div class="appointment-notes">Add your next appointment</div>
+                            </div>
+                        </div>
+                    </div>
+                    <button class="btn btn-primary" style="width: 100%; margin-top: 10px;" onclick="addAppointment()">
+                        Add Appointment
+                    </button>
+                </div>
+            </div>
+
+            <!-- BABY MODE HOME -->
+            <div class="baby-mode-content">
+                <!-- Smart Predictions -->
+                <div id="smartPredictions" class="pattern-card">
+                    <div class="section-title">
+                        <span>🤖</span> Smart Predictions
+                    </div>
+                    <div id="predictionsList">
+                        <div class="pattern-insight">
+                            <div class="pattern-icon">🍼</div>
+                            <div class="pattern-text" id="nextFeedingPrediction">Analyzing feeding patterns...</div>
+                        </div>
+                        <div class="pattern-insight">
+                            <div class="pattern-icon">🚼</div>
+                            <div class="pattern-text" id="nextDiaperPrediction">Tracking diaper patterns...</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Feeding Timer -->
+                <div class="feeding-timer-card">
+                    <div class="section-title">
+                        <span>🍼</span> Feeding Timer
+                    </div>
+                    <div class="feeding-timer-display">
+                        <div class="feeding-side" id="leftFeedingSide">
+                            <div style="font-weight: 600; margin-bottom: 10px;">Left Side</div>
+                            <div style="font-size: 24px; font-weight: bold;" id="leftFeedingTimer">00:00</div>
+                        </div>
+                        <div class="feeding-side" id="rightFeedingSide">
+                            <div style="font-weight: 600; margin-bottom: 10px;">Right Side</div>
+                            <div style="font-size: 24px; font-weight: bold;" id="rightFeedingTimer">00:00</div>
+                        </div>
+                    </div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                        <button class="btn btn-primary" onclick="toggleFeeding('left')">Start/Stop Left</button>
+                        <button class="btn btn-primary" onclick="toggleFeeding('right')">Start/Stop Right</button>
+                    </div>
+                </div>
+
+                <!-- Quick Actions -->
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 20px 0;">
+                    <button class="btn" style="background: var(--diaper-pee);" onclick="recordDiaper('pee')">💧 Wet Diaper</button>
+                    <button class="btn" style="background: var(--diaper-poop); color: white;" onclick="recordDiaper('poop')">💩 Dirty Diaper</button>
+                </div>
+
+                <!-- Activity Logs with Tabs -->
+                <div class="activity-log">
+                    <div class="section-title">
+                        <span>📊</span> Activity Logs
+                    </div>
+                    <div class="log-tabs">
+                        <button class="log-tab active" onclick="switchLogTab('feeding')">🍼 Feeding</button>
+                        <button class="log-tab" onclick="switchLogTab('diapers')">🚼 Diapers</button>
+                        <button class="log-tab" onclick="switchLogTab('all')">📋 All</button>
+                    </div>
+                    
+                    <div id="feedingLog" class="log-content active">
+                        <div style="text-align: center; padding: 20px; color: var(--text-light);">No feedings today</div>
+                    </div>
+                    
+                    <div id="diapersLog" class="log-content">
+                        <div style="text-align: center; padding: 20px; color: var(--text-light);">No diaper changes today</div>
+                    </div>
+                    
+                    <div id="allLog" class="log-content">
+                        <div style="text-align: center; padding: 20px; color: var(--text-light);">No activities today</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ANALYTICS TAB -->
+        <div id="analyticsTab" class="tab-content">
+            <!-- Pregnancy Analytics -->
+            <div class="pregnancy-mode-content">
+                <div class="analytics-card" style="background: var(--card-bg); border-radius: 20px; padding: 20px; margin-bottom: 20px; box-shadow: var(--shadow);">
+                    <div class="section-title">
+                        <span>📈</span> Kick Patterns
+                    </div>
+                    <div class="period-selector" style="display: flex; justify-content: center; gap: 10px; margin-bottom: 15px;">
+                        <button class="period-btn active" onclick="changePeriod(7)" style="padding: 6px 16px; border: none; border-radius: 20px; background: var(--primary); color: white; font-size: 12px; font-weight: 600; cursor: pointer;">7 Days</button>
+                        <button class="period-btn" onclick="changePeriod(14)" style="padding: 6px 16px; border: none; border-radius: 20px; background: var(--accent); color: var(--primary-dark); font-size: 12px; font-weight: 600; cursor: pointer;">14 Days</button>
+                        <button class="period-btn" onclick="changePeriod(30)" style="padding: 6px 16px; border: none; border-radius: 20px; background: var(--accent); color: var(--primary-dark); font-size: 12px; font-weight: 600; cursor: pointer;">30 Days</button>
+                    </div>
+                    <div class="chart-container" style="position: relative; height: 200px; margin-top: 15px;">
+                        <canvas id="kickChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="analytics-card" style="background: var(--card-bg); border-radius: 20px; padding: 20px; margin-bottom: 20px; box-shadow: var(--shadow);">
+                    <div class="section-title">
+                        <span>🎯</span> Kick Insights
+                    </div>
+                    <div class="insight-grid" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-top: 15px;">
+                        <div class="insight-item" style="background: var(--accent); padding: 12px; border-radius: 12px; text-align: center;">
+                            <div class="insight-value" id="yesterdayKicks" style="font-size: 20px; font-weight: bold; color: var(--primary); margin-bottom: 4px;">0</div>
+                            <div class="insight-label" style="font-size: 11px; color: var(--text-light); text-transform: uppercase;">Yesterday</div>
+                        </div>
+                        <div class="insight-item" style="background: var(--accent); padding: 12px; border-radius: 12px; text-align: center;">
+                            <div class="insight-value" id="weekAvgKicks" style="font-size: 20px; font-weight: bold; color: var(--primary); margin-bottom: 4px;">0</div>
+                            <div class="insight-label" style="font-size: 11px; color: var(--text-light); text-transform: uppercase;">Daily Avg</div>
+                        </div>
+                        <div class="insight-item" style="background: var(--accent); padding: 12px; border-radius: 12px; text-align: center;">
+                            <div class="insight-value" id="bestKickTime" style="font-size: 20px; font-weight: bold; color: var(--primary); margin-bottom: 4px;">--</div>
+                            <div class="insight-label" style="font-size: 11px; color: var(--text-light); text-transform: uppercase;">Peak Time</div>
+                        </div>
+                        <div class="insight-item" style="background: var(--accent); padding: 12px; border-radius: 12px; text-align: center;">
+                            <div class="insight-value" id="kickTrend" style="font-size: 20px; font-weight: bold; color: var(--primary); margin-bottom: 4px;">--</div>
+                            <div class="insight-label" style="font-size: 11px; color: var(--text-light); text-transform: uppercase;">Trend</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Baby Analytics -->
+            <div class="baby-mode-content">
+                <!-- Feeding Analytics -->
+                <div class="analytics-card" style="background: var(--card-bg); border-radius: 20px; padding: 20px; margin-bottom: 20px; box-shadow: var(--shadow);">
+                    <div class="section-title">
+                        <span>🍼</span> Feeding Analytics
+                    </div>
+                    <div class="period-selector" style="display: flex; justify-content: center; gap: 10px; margin-bottom: 15px;">
+                        <button class="period-btn active" onclick="changePeriod(7)" style="padding: 6px 16px; border: none; border-radius: 20px; background: var(--primary); color: white; font-size: 12px; font-weight: 600; cursor: pointer;">7 Days</button>
+                        <button class="period-btn" onclick="changePeriod(14)" style="padding: 6px 16px; border: none; border-radius: 20px; background: var(--accent); color: var(--primary-dark); font-size: 12px; font-weight: 600; cursor: pointer;">14 Days</button>
+                        <button class="period-btn" onclick="changePeriod(30)" style="padding: 6px 16px; border: none; border-radius: 20px; background: var(--accent); color: var(--primary-dark); font-size: 12px; font-weight: 600; cursor: pointer;">30 Days</button>
+                    </div>
+                    <div class="chart-container" style="position: relative; height: 200px; margin-top: 15px;">
+                        <canvas id="feedingChart"></canvas>
+                    </div>
+                    <div class="insight-grid" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-top: 15px;">
+                        <div class="insight-item" style="background: var(--accent); padding: 12px; border-radius: 12px; text-align: center;">
+                            <div class="insight-value" id="avgFeedingTime" style="font-size: 20px; font-weight: bold; color: var(--primary); margin-bottom: 4px;">0 min</div>
+                            <div class="insight-label" style="font-size: 11px; color: var(--text-light); text-transform: uppercase;">Avg Duration</div>
+                        </div>
+                        <div class="insight-item" style="background: var(--accent); padding: 12px; border-radius: 12px; text-align: center;">
+                            <div class="insight-value" id="avgFeedingInterval" style="font-size: 20px; font-weight: bold; color: var(--primary); margin-bottom: 4px;">0h</div>
+                            <div class="insight-label" style="font-size: 11px; color: var(--text-light); text-transform: uppercase;">Avg Interval</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Diaper Analytics -->
+                <div class="analytics-card" style="background: var(--card-bg); border-radius: 20px; padding: 20px; margin-bottom: 20px; box-shadow: var(--shadow);">
+                    <div class="section-title">
+                        <span>🚼</span> Diaper Analytics
+                    </div>
+                    <div class="chart-container" style="position: relative; height: 200px; margin-top: 15px;">
+                        <canvas id="diaperChart"></canvas>
+                    </div>
+                    <div class="insight-grid" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-top: 15px;">
+                        <div class="insight-item" style="background: var(--accent); padding: 12px; border-radius: 12px; text-align: center;">
+                            <div class="insight-value" id="weekPees" style="font-size: 20px; font-weight: bold; color: var(--primary); margin-bottom: 4px;">0</div>
+                            <div class="insight-label" style="font-size: 11px; color: var(--text-light); text-transform: uppercase;">Week Wet</div>
+                        </div>
+                        <div class="insight-item" style="background: var(--accent); padding: 12px; border-radius: 12px; text-align: center;">
+                            <div class="insight-value" id="weekPoops" style="font-size: 20px; font-weight: bold; color: var(--primary); margin-bottom: 4px;">0</div>
+                            <div class="insight-label" style="font-size: 11px; color: var(--text-light); text-transform: uppercase;">Week Dirty</div>
+                        </div>
+                        <div class="insight-item" style="background: var(--accent); padding: 12px; border-radius: 12px; text-align: center;">
+                            <div class="insight-value" id="avgDiapers" style="font-size: 20px; font-weight: bold; color: var(--primary); margin-bottom: 4px;">0</div>
+                            <div class="insight-label" style="font-size: 11px; color: var(--text-light); text-transform: uppercase;">Daily Avg</div>
+                        </div>
+                        <div class="insight-item" style="background: var(--accent); padding: 12px; border-radius: 12px; text-align: center;">
+                            <div class="insight-value" id="diaperRatio" style="font-size: 20px; font-weight: bold; color: var(--primary); margin-bottom: 4px;">--</div>
+                            <div class="insight-label" style="font-size: 11px; color: var(--text-light); text-transform: uppercase;">Wet:Dirty</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Export Section -->
+            <div class="export-section" style="background: var(--card-bg); border-radius: 20px; padding: 20px; margin-top: 20px; box-shadow: var(--shadow); text-align: center;">
+                <div class="section-title">
+                    <span>📄</span> Export Reports
+                </div>
+                <button class="btn" onclick="exportComprehensiveReport()" style="background: linear-gradient(135deg, var(--success) 0%, #6ba644 100%); color: white; width: 100%; padding: 12px 20px; border: none; border-radius: 12px; font-size: 15px; font-weight: 600; cursor: pointer;">
+                    Download Complete Report (PDF)
+                </button>
+                <p style="margin-top: 10px; font-size: 12px; color: var(--text-light);">
+                    Professional format for doctor visits
+                </p>
+            </div>
+        </div>
+
+        <!-- MEMORIES TAB (Simplified but functional) -->
+        <div id="memoriesTab" class="tab-content">
+            <div class="memory-card" style="background: var(--card-bg); border-radius: 20px; padding: 20px; margin-bottom: 20px; box-shadow: var(--shadow);">
+                <div class="section-title">
+                    <span>📸</span> Today's Photo
+                </div>
+                <div class="photo-upload-btn" onclick="capturePhoto()" style="width: 100%; height: 200px; border: 3px dashed var(--accent); border-radius: 15px; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; background: var(--background);">
+                    <span style="font-size: 40px;">📷</span>
+                    <span style="margin-top: 10px; color: var(--text-light);">Tap to add photo</span>
+                </div>
+                <input type="file" id="photoInput" accept="image/*" capture="camera" style="display: none;" onchange="handlePhotoUpload(event)">
+            </div>
+
+            <div class="memory-card" style="background: var(--card-bg); border-radius: 20px; padding: 20px; margin-bottom: 20px; box-shadow: var(--shadow);">
+                <div class="section-title">
+                    <span>🎯</span> Milestones
+                </div>
+                <div id="milestoneList">
+                    <div class="milestone-item" onclick="addMilestone('First Kick')" style="display: flex; align-items: center; padding: 15px; background: var(--background); border-radius: 15px; margin-bottom: 15px; cursor: pointer;">
+                        <div style="font-size: 30px; margin-right: 15px;">👣</div>
+                        <div style="flex: 1;">
+                            <div style="font-weight: 600; color: var(--primary-dark); margin-bottom: 4px;">First Kick Felt</div>
+                            <div style="font-size: 12px; color: var(--text-light);">Tap to record</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- CONNECT TAB (Keep simple per your request) -->
+        <div id="connectTab" class="tab-content">
+            <div class="message-card" style="background: var(--card-bg); border-radius: 20px; padding: 20px; margin-bottom: 20px; box-shadow: var(--shadow);">
+                <div class="section-title">
+                    <span>💕</span> Partner Connection
+                </div>
+                <p style="text-align: center; padding: 20px; color: var(--text-light);">
+                    Both partners using the app will see synchronized data in real-time through Firebase!
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bottom Navigation -->
+    <div class="bottom-nav">
+        <div class="nav-item active" onclick="switchTab('home')">
+            <div class="icon">🏠</div>
+            <div class="label">Home</div>
+        </div>
+        <div class="nav-item" onclick="switchTab('analytics')">
+            <div class="icon">📊</div>
+            <div class="label">Analytics</div>
+        </div>
+        <div class="nav-item" onclick="switchTab('memories')">
+            <div class="icon">📸</div>
+            <div class="label">Memories</div>
+        </div>
+        <div class="nav-item" onclick="switchTab('connect')">
+            <div class="icon">💕</div>
+            <div class="label">Connect</div>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div class="toast" id="toast">
+        <span id="toastIcon">✓</span>
+        <span id="toastMessage">Activity recorded!</span>
+    </div>
+
+    <script>
+        // ==========================================
+        // STEP BY STEP IMPLEMENTATION GUIDE
+        // ==========================================
+        
+        // STEP 1: Firebase Configuration
+        // TODO: Replace with your Firebase config
+        const firebaseConfig = {
+            apiKey: "YOUR_API_KEY",
+            authDomain: "YOUR_AUTH_DOMAIN",
+            databaseURL: "YOUR_DATABASE_URL",
+            projectId: "YOUR_PROJECT_ID",
+            storageBucket: "YOUR_STORAGE_BUCKET",
+            messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+            appId: "YOUR_APP_ID"
+        };
+
+        // Initialize variables
+        let database = null;
+        let messaging = null;
+        let activitiesRef = null;
+        let kicksRef = null;
+        let appointmentsRef = null;
+        let isOnline = false;
+        
+        // App state
+        let currentMode = 'pregnancy';
+        let currentTab = 'home';
+        let currentLogTab = 'feeding';
+        let currentUser = null;
+        let kicks = [];
+        let activities = [];
+        let appointments = [];
+        let audioContext = null;
+        
+        // Smart tracking variables
+        let kickSession = { 
+            active: false, 
+            startTime: null, 
+            kicks: [], 
+            sessionCount: 0 
+        };
+        
+        let feedingTimers = {
+            left: { active: false, startTime: null, totalTime: 0 },
+            right: { active: false, startTime: null, totalTime: 0 }
+        };
+        
+        // Pattern analysis variables
+        let patterns = {
+            kickPatterns: [],
+            feedingIntervals: [],
+            diaperIntervals: [],
+            averageKickTime: null,
+            lastPredictionUpdate: null
+        };
+
+        // ==========================================
+        // STEP 2: Initialize Firebase & Messaging
+        // ==========================================
+        
+        if (firebaseConfig.apiKey && firebaseConfig.apiKey !== "YOUR_API_KEY") {
+            try {
+                firebase.initializeApp(firebaseConfig);
+                database = firebase.database();
+                messaging = firebase.messaging();
+                
+                // Set up database references
+                activitiesRef = database.ref('activities');
+                kicksRef = database.ref('kicks');
+                appointmentsRef = database.ref('appointments');
+                
+                // Monitor connection
+                database.ref('.info/connected').on('value', (snap) => {
+                    isOnline = snap.val() === true;
+                });
+                
+                // Set up messaging
+                messaging.onMessage((payload) => {
+                    console.log('Message received:', payload);
+                    showNotification(payload.notification.title, payload.notification.body);
+                });
+                
+                console.log('✅ STEP 2 COMPLETE: Firebase initialized');
+            } catch (error) {
+                console.error('Firebase initialization error:', error);
+            }
+        }
+
+        // ==========================================
+        // STEP 3: Service Worker Registration
+        // ==========================================
+        
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/firebase-messaging-sw.js')
+                .then((registration) => {
+                    console.log('✅ STEP 3 COMPLETE: Service Worker registered');
+                    
+                    // Pass registration to messaging
+                    if (messaging) {
+                        messaging.useServiceWorker(registration);
+                    }
+                })
+                .catch((err) => {
+                    console.error('Service Worker registration failed:', err);
+                });
+        }
+
+        // ==========================================
+        // STEP 4: Request Notification Permission
+        // ==========================================
+        
+        function checkNotificationPermission() {
+            if (!('Notification' in window)) {
+                console.log('This browser does not support notifications');
+                return;
+            }
+            
+            if (Notification.permission === 'default') {
+                document.getElementById('notificationBanner').style.display = 'flex';
+            } else if (Notification.permission === 'granted') {
+                setupNotifications();
+            }
+        }
+        
+        function requestNotificationPermission() {
+            Notification.requestPermission().then((permission) => {
+                if (permission === 'granted') {
+                    console.log('✅ STEP 4 COMPLETE: Notification permission granted');
+                    document.getElementById('notificationBanner').style.display = 'none';
+                    setupNotifications();
+                    
+                    // Get FCM token
+                    if (messaging) {
+                        messaging.getToken().then((token) => {
+                            console.log('FCM Token:', token);
+                            // Save token to database for this user
+                            if (database && currentUser) {
+                                database.ref('users/' + currentUser.id + '/fcmToken').set(token);
+                            }
+                        });
+                    }
+                    
+                    showToast('🔔 Smart notifications enabled!', 'success');
+                }
+            });
+        }
+        
+        function setupNotifications() {
+            // Schedule smart reminders
+            scheduleSmartReminders();
+            console.log('✅ Notifications fully configured');
+        }
+
+        // ==========================================
+        // STEP 5: Smart Pattern Analysis (Ingrid's Idea #2)
+        // ==========================================
+        
+        function analyzeKickPatterns() {
+            const now = Date.now();
+            const today = new Date().toDateString();
+            const todayKicks = kicks.filter(k => 
+                new Date(k.timestamp).toDateString() === today
+            );
+            
+            // Check if we have a session with 10 kicks
+            if (kickSession.active && kickSession.kicks.length > 0) {
+                const sessionStart = kickSession.kicks[0];
+                const currentCount = kickSession.kicks.length;
+                
+                // Goal reached!
+                if (currentCount >= 10) {
+                    const duration = now - sessionStart;
+                    const durationMinutes = Math.floor(duration / 60000);
+                    
+                    // Save this session pattern
+                    patterns.kickPatterns.push({
+                        duration: durationMinutes,
+                        timestamp: now,
+                        count: currentCount
+                    });
+                    
+                    // Calculate average
+                    const avgDuration = patterns.kickPatterns.reduce((acc, p) => acc + p.duration, 0) / patterns.kickPatterns.length;
+                    patterns.averageKickTime = Math.round(avgDuration);
+                    
+                    // Check if this is normal
+                    if (durationMinutes <= 120) { // Within 2 hours
+                        showSmartAlert('success', '🎉 Goal Reached!', 
+                            `10 kicks in ${durationMinutes} minutes - Perfect! Baby is active and healthy.`);
+                        
+                        // Send notification
+                        sendNotification('Kick Goal Achieved! 🎉', 
+                            `Great job! 10 kicks counted in ${durationMinutes} minutes.`);
+                    } else {
+                        showSmartAlert('warning', '⚠️ Slower than usual', 
+                            `10 kicks took ${durationMinutes} minutes (avg: ${avgDuration} min). Consider having a snack and lying on your side.`);
+                    }
+                    
+                    // Reset session
+                    kickSession.active = false;
+                    kickSession.kicks = [];
+                    document.getElementById('kickSessionInfo').style.display = 'none';
+                }
+            }
+            
+            // Update progress bar
+            updateKickProgress(todayKicks.length);
+            
+            // Update pattern insights
+            updatePatternInsights();
+        }
+        
+        function updateKickProgress(count) {
+            const progress = Math.min(100, (count / 10) * 100);
+            const progressBar = document.getElementById('kickProgressBar');
+            
+            progressBar.style.width = progress + '%';
+            progressBar.textContent = `${count} / 10`;
+            
+            const status = document.getElementById('kickGoalStatus');
+            if (count >= 10) {
+                status.textContent = '✅ Daily goal reached!';
+            } else {
+                status.textContent = `Keep going! ${10 - count} more kicks needed`;
+            }
+            
+            // Update time estimate
+            if (patterns.averageKickTime) {
+                document.getElementById('kickTimeEstimate').textContent = 
+                    `Avg time: ${patterns.averageKickTime} min`;
+            }
+        }
+        
+        function updatePatternInsights() {
+            const insightsEl = document.getElementById('patternInsights');
+            const insights = [];
+            
+            // Most active time
+            if (kicks.length > 10) {
+                const hourCounts = {};
+                kicks.forEach(k => {
+                    const hour = new Date(k.timestamp).getHours();
+                    hourCounts[hour] = (hourCounts[hour] || 0) + 1;
+                });
+                
+                const maxHour = Object.keys(hourCounts).reduce((a, b) => 
+                    hourCounts[a] > hourCounts[b] ? a : b
+                );
+                
+                insights.push({
+                    icon: '⏰',
+                    text: `Most active around ${maxHour}:00`
+                });
+            }
+            
+            // Average session duration
+            if (patterns.averageKickTime) {
+                insights.push({
+                    icon: '⏱️',
+                    text: `Usually reaches 10 kicks in ${patterns.averageKickTime} minutes`
+                });
+            }
+            
+            // Today's status
+            const today = new Date().toDateString();
+            const todayKicks = kicks.filter(k => 
+                new Date(k.timestamp).toDateString() === today
+            );
+            
+            if (todayKicks.length > 0) {
+                const lastKick = new Date(todayKicks[todayKicks.length - 1].timestamp);
+                const minutesAgo = Math.floor((Date.now() - lastKick) / 60000);
+                
+                insights.push({
+                    icon: '👣',
+                    text: `Last movement ${minutesAgo} minutes ago`
+                });
+            }
+            
+            // Render insights
+            if (insights.length > 0) {
+                insightsEl.innerHTML = insights.map(insight => `
+                    <div class="pattern-insight">
+                        <div class="pattern-icon">${insight.icon}</div>
+                        <div class="pattern-text">${insight.text}</div>
+                    </div>
+                `).join('');
+            }
+        }
+
+        // ==========================================
+        // STEP 6: Smart Predictions for Baby Mode (Ingrid's Idea #1)
+        // ==========================================
+        
+        function analyzeBabyPatterns() {
+            if (activities.length < 5) return; // Need data to predict
+            
+            const now = Date.now();
+            
+            // Analyze feeding intervals
+            const feedings = activities
+                .filter(a => a.type === 'feeding')
+                .sort((a, b) => a.timestamp - b.timestamp);
+            
+            if (feedings.length > 1) {
+                const intervals = [];
+                for (let i = 1; i < feedings.length; i++) {
+                    intervals.push(feedings[i].timestamp - feedings[i-1].timestamp);
+                }
+                
+                const avgInterval = intervals.reduce((a, b) => a + b, 0) / intervals.length;
+                const lastFeeding = feedings[feedings.length - 1].timestamp;
+                const nextFeeding = lastFeeding + avgInterval;
+                const minutesUntil = Math.floor((nextFeeding - now) / 60000);
+                
+                if (minutesUntil > 0 && minutesUntil < 180) { // Within 3 hours
+                    document.getElementById('nextFeedingPrediction').textContent = 
+                        `Next feeding likely in ${minutesUntil} minutes`;
+                    
+                    // Schedule reminder
+                    if (minutesUntil < 30) {
+                        scheduleNotification('Feeding Reminder 🍼', 
+                            'Based on patterns, baby might be hungry soon!', minutesUntil - 10);
+                    }
+                }
+            }
+            
+            // Analyze diaper patterns
+            const diapers = activities
+                .filter(a => a.type === 'diaper')
+                .sort((a, b) => a.timestamp - b.timestamp);
+            
+            if (diapers.length > 2) {
+                const lastDiaper = diapers[diapers.length - 1].timestamp;
+                const timeSince = Math.floor((now - lastDiaper) / 60000);
+                
+                if (timeSince > 120) { // More than 2 hours
+                    document.getElementById('nextDiaperPrediction').textContent = 
+                        `Check diaper - it's been ${timeSince} minutes`;
+                    
+                    // Show alert if it's been too long
+                    if (timeSince > 180) {
+                        showSmartAlert('info', '🚼 Diaper Check', 
+                            `It's been ${Math.floor(timeSince / 60)} hours since last change`);
+                    }
+                }
+            }
+        }
+        
+        function scheduleSmartReminders() {
+            // This runs every 15 minutes to check patterns
+            setInterval(() => {
+                if (currentMode === 'pregnancy') {
+                    checkKickReminders();
+                } else {
+                    analyzeBabyPatterns();
+                }
+            }, 15 * 60 * 1000); // Every 15 minutes
+        }
+        
+        function checkKickReminders() {
+            const today = new Date().toDateString();
+            const todayKicks = kicks.filter(k => 
+                new Date(k.timestamp).toDateString() === today
+            );
+            
+            const hour = new Date().getHours();
+            
+            // Remind to count kicks if haven't started today
+            if (todayKicks.length === 0 && hour > 9 && hour < 21) {
+                sendNotification('Time to Count Kicks 👣', 
+                    'Start your daily kick counting session');
+            }
+            
+            // Remind if session is incomplete
+            if (kickSession.active && kickSession.kicks.length < 10) {
+                const duration = Date.now() - kickSession.startTime;
+                if (duration > 2 * 60 * 60 * 1000) { // More than 2 hours
+                    sendNotification('Kick Session Alert ⚠️', 
+                        'Session taking longer than usual. Try having a snack or cold drink.');
+                }
+            }
+        }
+
+        // ==========================================
+        // STEP 7: Core App Functions
+        // ==========================================
+        
+        function init() {
+            checkUserSetup();
+            checkNotificationPermission();
+            loadLocalData();
+            updateQuickStats();
+            
+            // Start pattern analysis
+            setInterval(() => {
+                if (currentMode === 'pregnancy') {
+                    analyzeKickPatterns();
+                } else {
+                    analyzeBabyPatterns();
+                }
+            }, 60000); // Every minute
+            
+            // Update timers
+            setInterval(updateTimers, 1000);
+            
+            console.log('✅ App initialized successfully');
+        }
+        
+        function checkUserSetup() {
+            const saved = localStorage.getItem('smartTrackerUser');
+            if (!saved) {
+                document.getElementById('setupModal').style.display = 'flex';
+            } else {
+                currentUser = JSON.parse(saved);
+            }
+        }
+        
+        function setupUser(role) {
+            const name = document.getElementById('setupName').value.trim();
+            if (!name) {
+                showToast('Please enter your name', 'warning');
+                return;
+            }
+            
+            currentUser = {
+                name: name,
+                role: role,
+                id: role + '_' + Date.now()
+            };
+            
+            localStorage.setItem('smartTrackerUser', JSON.stringify(currentUser));
+            document.getElementById('setupModal').style.display = 'none';
+            
+            showToast(`Welcome ${name}! 👶`, 'success');
+            init();
+        }
+        
+        function loadLocalData() {
+            const savedKicks = localStorage.getItem('smartTrackerKicks');
+            if (savedKicks) kicks = JSON.parse(savedKicks);
+            
+            const savedActivities = localStorage.getItem('smartTrackerActivities');
+            if (savedActivities) activities = JSON.parse(savedActivities);
+            
+            const savedPatterns = localStorage.getItem('smartTrackerPatterns');
+            if (savedPatterns) patterns = JSON.parse(savedPatterns);
+        }
+        
+        function saveLocalData() {
+            localStorage.setItem('smartTrackerKicks', JSON.stringify(kicks.slice(-500)));
+            localStorage.setItem('smartTrackerActivities', JSON.stringify(activities.slice(-500)));
+            localStorage.setItem('smartTrackerPatterns', JSON.stringify(patterns));
+        }
+
+        // ==========================================
+        // STEP 8: Recording Functions
+        // ==========================================
+        
+        function recordKick() {
+            if (!currentUser) {
+                showToast('Please set up your profile first', 'warning');
+                return;
+            }
+            
+            const now = Date.now();
+            
+            // Start session if not active
+            if (!kickSession.active) {
+                kickSession = {
+                    active: true,
+                    startTime: now,
+                    kicks: [now],
+                    sessionCount: 1
+                };
+                document.getElementById('kickSessionInfo').style.display = 'block';
+                showToast('👣 Kick session started!', 'info');
+            } else {
+                kickSession.kicks.push(now);
+                kickSession.sessionCount++;
+            }
+            
+            // Update session display
+            document.getElementById('sessionKickCount').textContent = kickSession.sessionCount;
+            
+            // Haptic feedback
+            if (navigator.vibrate) {
+                navigator.vibrate([50, 30, 50]);
+            }
+            
+            const kick = {
+                timestamp: now,
+                parent: currentUser,
+                sessionId: kickSession.startTime,
+                id: 'kick_' + now
+            };
+            
+            // Animation
+            const btn = document.getElementById('kickBtn');
+            btn.classList.add('pulse');
+            setTimeout(() => btn.classList.remove('pulse'), 500);
+            
+            // Save
+            if (kicksRef) {
+                kicksRef.push(kick);
+            }
+            kicks.push(kick);
+            saveLocalData();
+            
+            // Update displays
+            updateKickCount();
+            analyzeKickPatterns();
+            updateQuickStats();
+            
+            showToast('👣 Kick recorded!', 'success');
+        }
+        
+        function updateKickCount() {
+            const today = new Date().toDateString();
+            const todayKicks = kicks.filter(k => 
+                new Date(k.timestamp).toDateString() === today
+            );
+            
+            document.getElementById('kickCount').textContent = todayKicks.length;
+        }
+        
+        function toggleFeeding(side) {
+            if (!currentUser) {
+                showToast('Please set up your profile first', 'warning');
+                return;
+            }
+            
+            const timer = feedingTimers[side];
+            const sideElement = document.getElementById(`${side}FeedingSide`);
+            
+            if (timer.active) {
+                // Stop feeding
+                const duration = Math.floor((Date.now() - timer.startTime) / 1000);
+                timer.totalTime += duration;
+                timer.active = false;
+                timer.startTime = null;
+                
+                sideElement.classList.remove('active');
+                
+                // Save feeding session
+                const activity = {
+                    type: 'feeding',
+                    side: side,
+                    duration: duration,
+                    timestamp: Date.now(),
+                    parent: currentUser,
+                    id: 'feed_' + Date.now()
+                };
+                
+                if (activitiesRef) {
+                    activitiesRef.push(activity);
+                }
+                activities.push(activity);
+                saveLocalData();
+                
+                showToast(`🍼 ${side} side feeding ended (${Math.round(duration / 60)} min)`, 'success');
+                
+                // Reset timer display
+                document.getElementById(`${side}FeedingTimer`).textContent = '00:00';
+                
+                // Update predictions
+                analyzeBabyPatterns();
+                updateQuickStats();
+                refreshLogs();
+            } else {
+                // Start feeding
+                timer.active = true;
+                timer.startTime = Date.now();
+                sideElement.classList.add('active');
+                
+                showToast(`🍼 ${side} side feeding started`, 'info');
+            }
+        }
+        
+        function recordDiaper(type) {
+            if (!currentUser) {
+                showToast('Please set up your profile first', 'warning');
+                return;
+            }
+            
+            const activity = {
+                type: 'diaper',
+                diaperType: type,
+                timestamp: Date.now(),
+                parent: currentUser,
+                id: 'diaper_' + Date.now()
+            };
+            
+            if (activitiesRef) {
+                activitiesRef.push(activity);
+            }
+            activities.push(activity);
+            saveLocalData();
+            
+            const icon = type === 'pee' ? '💧' : '💩';
+            showToast(`${icon} Diaper recorded`, 'success');
+            
+            analyzeBabyPatterns();
+            updateQuickStats();
+            refreshLogs();
+        }
+        
+        function addAppointment() {
+            const date = prompt('Enter appointment date (MM/DD/YYYY):');
+            const notes = prompt('Enter notes (optional):');
+            
+            if (date) {
+                const appointment = {
+                    date: date,
+                    notes: notes || '',
+                    timestamp: Date.now(),
+                    id: 'apt_' + Date.now()
+                };
+                
+                if (appointmentsRef) {
+                    appointmentsRef.push(appointment);
+                }
+                appointments.push(appointment);
+                
+                // Schedule reminder
+                const aptDate = new Date(date);
+                const dayBefore = new Date(aptDate);
+                dayBefore.setDate(dayBefore.getDate() - 1);
+                
+                if (dayBefore > new Date()) {
+                    // Schedule notification for day before
+                    const timeUntil = dayBefore - new Date();
+                    scheduleNotification('Appointment Reminder 🏥', 
+                        `OB appointment tomorrow: ${notes || 'No notes'}`, 
+                        Math.floor(timeUntil / 60000));
+                }
+                
+                renderAppointments();
+                showToast('📅 Appointment added!', 'success');
+            }
+        }
+        
+        function renderAppointments() {
+            const list = document.getElementById('appointmentList');
+            const upcoming = appointments
+                .filter(a => new Date(a.date) >= new Date())
+                .sort((a, b) => new Date(a.date) - new Date(b.date));
+            
+            if (upcoming.length > 0) {
+                list.innerHTML = upcoming.map(apt => `
+                    <div class="appointment-item">
+                        <div class="appointment-icon">📅</div>
+                        <div class="appointment-details">
+                            <div class="appointment-date">${apt.date}</div>
+                            <div class="appointment-notes">${apt.notes || 'No notes'}</div>
+                        </div>
+                    </div>
+                `).join('');
+            }
+        }
+
+        // ==========================================
+        // STEP 9: UI Updates & Helpers
+        // ==========================================
+        
+        function updateTimers() {
+            // Update kick session timer
+            if (kickSession.active) {
+                const elapsed = Math.floor((Date.now() - kickSession.startTime) / 1000);
+                document.getElementById('sessionDuration').textContent = formatDuration(elapsed);
+            }
+            
+            // Update feeding timers
+            if (feedingTimers.left.active) {
+                const elapsed = Math.floor((Date.now() - feedingTimers.left.startTime) / 1000);
+                document.getElementById('leftFeedingTimer').textContent = formatDuration(elapsed);
+            }
+            
+            if (feedingTimers.right.active) {
+                const elapsed = Math.floor((Date.now() - feedingTimers.right.startTime) / 1000);
+                document.getElementById('rightFeedingTimer').textContent = formatDuration(elapsed);
+            }
+        }
+        
+        function formatDuration(seconds) {
+            const mins = Math.floor(seconds / 60);
+            const secs = seconds % 60;
+            return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+        }
+        
+        function updateQuickStats() {
+            const today = new Date().toDateString();
+            
+            // Kicks
+            const todayKicks = kicks.filter(k => 
+                new Date(k.timestamp).toDateString() === today
+            );
+            document.getElementById('quickKicks').textContent = todayKicks.length;
+            
+            // Feedings
+            const todayFeedings = activities.filter(a => 
+                a.type === 'feeding' && 
+                new Date(a.timestamp).toDateString() === today
+            );
+            document.getElementById('quickFeedings').textContent = todayFeedings.length;
+            
+            // Diapers
+            const todayDiapers = activities.filter(a => 
+                a.type === 'diaper' && 
+                new Date(a.timestamp).toDateString() === today
+            );
+            document.getElementById('quickDiapers').textContent = todayDiapers.length;
+            
+            // Last activity time
+            const allToday = [...todayKicks, ...todayFeedings, ...todayDiapers]
+                .sort((a, b) => b.timestamp - a.timestamp);
+            
+            if (allToday.length > 0) {
+                const lastTime = new Date(allToday[0].timestamp);
+                document.getElementById('quickTime').textContent = 
+                    lastTime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+            }
+        }
+        
+        function showSmartAlert(type, title, message) {
+            const alertsEl = document.getElementById('smartAlerts');
+            const alertId = 'alert_' + Date.now();
+            
+            const alertHTML = `
+                <div class="smart-alert ${type}" id="${alertId}">
+                    <div class="smart-alert-icon">
+                        ${type === 'success' ? '✅' : type === 'warning' ? '⚠️' : 'ℹ️'}
+                    </div>
+                    <div class="smart-alert-content">
+                        <div class="smart-alert-title">${title}</div>
+                        <div class="smart-alert-message">${message}</div>
+                    </div>
+                </div>
+            `;
+            
+            alertsEl.insertAdjacentHTML('afterbegin', alertHTML);
+            
+            // Auto remove after 10 seconds
+            setTimeout(() => {
+                const alert = document.getElementById(alertId);
+                if (alert) alert.remove();
+            }, 10000);
+        }
+        
+        function switchTab(tabName) {
+            currentTab = tabName;
+            
+            // Update nav items
+            document.querySelectorAll('.nav-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            event.currentTarget.classList.add('active');
+            
+            // Show correct tab content
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            document.getElementById(tabName + 'Tab').classList.add('active');
+        }
+        
+        function switchMode(mode) {
+            currentMode = mode;
+            localStorage.setItem('trackingMode', mode);
+            document.body.className = mode + '-mode';
+            
+            // Update buttons
+            document.getElementById('pregnancyModeBtn').classList.toggle('active', mode === 'pregnancy');
+            document.getElementById('babyModeBtn').classList.toggle('active', mode === 'baby');
+            
+            // Update header
+            document.getElementById('modeIcon').textContent = mode === 'pregnancy' ? '🤰' : '👶';
+            
+            if (mode === 'pregnancy') {
+                updateKickCount();
+                updatePatternInsights();
+            } else {
+                analyzeBabyPatterns();
+                refreshLogs();
+            }
+        }
+        
+        function switchLogTab(tabName) {
+            currentLogTab = tabName;
+            
+            // Update tab buttons
+            document.querySelectorAll('.log-tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            
+            // Show correct log content
+            document.querySelectorAll('.log-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            
+            if (tabName === 'feeding') {
+                document.getElementById('feedingLog').classList.add('active');
+            } else if (tabName === 'diapers') {
+                document.getElementById('diapersLog').classList.add('active');
+            } else if (tabName === 'all') {
+                document.getElementById('allLog').classList.add('active');
+            }
+            
+            refreshLogs();
+        }
+        
+        function refreshLogs() {
+            // This is simplified - in full version, render complete logs
+            console.log('Refreshing logs for:', currentLogTab);
+        }
+        
+        function showToast(message, type = 'success') {
+            const toast = document.getElementById('toast');
+            const toastMessage = document.getElementById('toastMessage');
+            
+            toastMessage.textContent = message;
+            toast.className = 'toast show';
+            
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 3000);
+        }
+
+        // ==========================================
+        // STEP 10: Notification Helpers
+        // ==========================================
+        
+        function sendNotification(title, body, icon = '👶') {
+            if (Notification.permission === 'granted') {
+                new Notification(title, {
+                    body: body,
+                    icon: 'data:image/svg+xml,<svg>...</svg>', // Add icon
+                    badge: 'data:image/svg+xml,<svg>...</svg>', // Add badge
+                    vibrate: [200, 100, 200],
+                    tag: 'smart-tracker'
+                });
+            }
+        }
+        
+        function scheduleNotification(title, body, minutesFromNow) {
+            setTimeout(() => {
+                sendNotification(title, body);
+            }, minutesFromNow * 60 * 1000);
+        }
+        
+        function showNotification(title, body) {
+            // In-app notification display
+            showSmartAlert('info', title, body);
+        }
+
+        // ==========================================
+        // ANALYTICS FUNCTIONS
+        // ==========================================
+        
+        let kickChart = null;
+        let feedingChart = null;
+        let diaperChart = null;
+        let currentPeriod = 7;
+        let photos = [];
+        let milestones = [];
+        
+        function initCharts() {
+            // Initialize kick chart
+            const kickCtx = document.getElementById('kickChart');
+            if (kickCtx) {
+                kickChart = new Chart(kickCtx, {
+                    type: 'bar',
+                    data: { 
+                        labels: [], 
+                        datasets: [{ 
+                            label: 'Daily Kicks', 
+                            data: [], 
+                            backgroundColor: 'rgba(254, 197, 229, 0.6)',
+                            borderColor: 'rgba(254, 197, 229, 1)',
+                            borderWidth: 1
+                        }] 
+                    },
+                    options: { 
+                        responsive: true, 
+                        maintainAspectRatio: false,
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                ticks: {
+                                    stepSize: 5
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+            
+            // Initialize feeding chart
+            const feedingCtx = document.getElementById('feedingChart');
+            if (feedingCtx) {
+                feedingChart = new Chart(feedingCtx, {
+                    type: 'bar',
+                    data: { 
+                        labels: [], 
+                        datasets: [{ 
+                            label: 'Daily Feedings', 
+                            data: [], 
+                            backgroundColor: 'rgba(135, 206, 235, 0.6)',
+                            borderColor: 'rgba(135, 206, 235, 1)',
+                            borderWidth: 1
+                        }] 
+                    },
+                    options: { 
+                        responsive: true, 
+                        maintainAspectRatio: false,
+                        scales: {
+                            y: {
+                                beginAtZero: true
+                            }
+                        }
+                    }
+                });
+            }
+            
+            // Initialize diaper chart
+            const diaperCtx = document.getElementById('diaperChart');
+            if (diaperCtx) {
+                diaperChart = new Chart(diaperCtx, {
+                    type: 'pie',
+                    data: { 
+                        labels: ['Wet', 'Dirty'], 
+                        datasets: [{ 
+                            data: [0, 0], 
+                            backgroundColor: ['#ffe8a1', '#d4a373'] 
+                        }] 
+                    },
+                    options: { 
+                        responsive: true, 
+                        maintainAspectRatio: false 
+                    }
+                });
+            }
+        }
+        
+        function changePeriod(days) {
+            currentPeriod = days;
+            
+            // Update button states
+            document.querySelectorAll('.period-btn').forEach(btn => {
+                btn.classList.remove('active');
+                btn.style.background = 'var(--accent)';
+                btn.style.color = 'var(--primary-dark)';
+            });
+            event.target.classList.add('active');
+            event.target.style.background = 'var(--primary)';
+            event.target.style.color = 'white';
+            
+            updateAnalytics();
+        }
+        
+        function updateAnalytics() {
+            if (currentTab !== 'analytics') return;
+            
+            const now = new Date();
+            
+            if (currentMode === 'pregnancy') {
+                updateKickAnalytics(now);
+            } else {
+                updateBabyModeAnalytics(now);
+            }
+        }
+        
+        function updateKickAnalytics(now) {
+            // Calculate kick data for selected period
+            const labels = [];
+            const chartData = [];
+            
+            for (let i = currentPeriod - 1; i >= 0; i--) {
+                const date = new Date(now);
+                date.setDate(date.getDate() - i);
+                const dayKicks = kicks.filter(k => 
+                    new Date(k.timestamp).toDateString() === date.toDateString()
+                );
+                
+                labels.push(date.toLocaleDateString('en-US', { weekday: 'short' }));
+                chartData.push(dayKicks.length);
+            }
+            
+            // Update chart
+            if (kickChart) {
+                kickChart.data.labels = labels;
+                kickChart.data.datasets[0].data = chartData;
+                kickChart.update();
+            }
+            
+            // Update insights
+            const yesterday = new Date(now);
+            yesterday.setDate(yesterday.getDate() - 1);
+            const yesterdayKicks = kicks.filter(k => 
+                new Date(k.timestamp).toDateString() === yesterday.toDateString()
+            );
+            
+            document.getElementById('yesterdayKicks').textContent = yesterdayKicks.length;
+            
+            const weekAvg = Math.round(chartData.reduce((a, b) => a + b, 0) / currentPeriod);
+            document.getElementById('weekAvgKicks').textContent = weekAvg;
+            
+            // Find peak hour
+            const todayKicks = kicks.filter(k => 
+                new Date(k.timestamp).toDateString() === now.toDateString()
+            );
+            const hourlyData = new Array(24).fill(0);
+            todayKicks.forEach(k => {
+                const hour = new Date(k.timestamp).getHours();
+                hourlyData[hour]++;
+            });
+            const peakHour = hourlyData.indexOf(Math.max(...hourlyData));
+            document.getElementById('bestKickTime').textContent = peakHour >= 0 ? `${peakHour}:00` : '--';
+            
+            // Calculate trend
+            const halfPoint = Math.floor(chartData.length / 2);
+            const firstHalf = chartData.slice(0, halfPoint).reduce((a, b) => a + b, 0) / halfPoint || 0;
+            const secondHalf = chartData.slice(halfPoint).reduce((a, b) => a + b, 0) / (chartData.length - halfPoint) || 0;
+            const trend = secondHalf > firstHalf ? '📈 Up' : secondHalf < firstHalf ? '📉 Down' : '➡️ Stable';
+            document.getElementById('kickTrend').textContent = trend;
+        }
+        
+        function updateBabyModeAnalytics(now) {
+            // Feeding Analytics
+            const labels = [];
+            const feedingData = [];
+            
+            for (let i = currentPeriod - 1; i >= 0; i--) {
+                const date = new Date(now);
+                date.setDate(date.getDate() - i);
+                const dayFeedings = activities.filter(a => 
+                    a.type === 'feeding' && 
+                    new Date(a.timestamp).toDateString() === date.toDateString()
+                );
+                
+                labels.push(date.toLocaleDateString('en-US', { weekday: 'short' }));
+                feedingData.push(dayFeedings.length);
+            }
+            
+            if (feedingChart) {
+                feedingChart.data.labels = labels;
+                feedingChart.data.datasets[0].data = feedingData;
+                feedingChart.update();
+            }
+            
+            // Calculate feeding insights
+            const allFeedings = activities.filter(a => a.type === 'feeding');
+            const avgDuration = allFeedings.reduce((acc, f) => acc + (f.duration || 0), 0) / allFeedings.length;
+            document.getElementById('avgFeedingTime').textContent = Math.round(avgDuration / 60) + ' min';
+            
+            // Calculate average interval
+            const sortedFeedings = allFeedings.sort((a, b) => a.timestamp - b.timestamp);
+            let totalInterval = 0;
+            let intervalCount = 0;
+            for (let i = 1; i < sortedFeedings.length; i++) {
+                totalInterval += sortedFeedings[i].timestamp - sortedFeedings[i-1].timestamp;
+                intervalCount++;
+            }
+            const avgInterval = intervalCount > 0 ? totalInterval / intervalCount : 0;
+            const avgIntervalHours = Math.round(avgInterval / (1000 * 60 * 60));
+            document.getElementById('avgFeedingInterval').textContent = avgIntervalHours + 'h';
+            
+            // Diaper Analytics
+            const weekDiapers = activities.filter(a => 
+                a.type === 'diaper' && 
+                new Date(a.timestamp) > new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
+            );
+            
+            const weekPees = weekDiapers.filter(a => a.diaperType === 'pee').length;
+            const weekPoops = weekDiapers.filter(a => a.diaperType === 'poop').length;
+            
+            document.getElementById('weekPees').textContent = weekPees;
+            document.getElementById('weekPoops').textContent = weekPoops;
+            document.getElementById('avgDiapers').textContent = Math.round((weekPees + weekPoops) / 7);
+            document.getElementById('diaperRatio').textContent = weekPees + ':' + weekPoops;
+            
+            if (diaperChart) {
+                diaperChart.data.datasets[0].data = [weekPees, weekPoops];
+                diaperChart.update();
+            }
+        }
+        
+        function exportComprehensiveReport() {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            
+            // Title
+            doc.setFontSize(20);
+            doc.text("Avi's Comprehensive Health Report", 20, 20);
+            
+            // Date
+            doc.setFontSize(12);
+            doc.text(`Generated: ${new Date().toLocaleDateString()}`, 20, 30);
+            doc.text(`Mode: ${currentMode === 'pregnancy' ? 'Pregnancy' : 'Baby Care'}`, 20, 37);
+            
+            let yPos = 50;
+            
+            if (currentMode === 'pregnancy') {
+                // Pregnancy Report
+                doc.setFontSize(16);
+                doc.text("Kick Activity Summary", 20, yPos);
+                yPos += 10;
+                
+                doc.setFontSize(12);
+                const today = kicks.filter(k => 
+                    new Date(k.timestamp).toDateString() === new Date().toDateString()
+                ).length;
+                doc.text(`Today's Kicks: ${today}`, 30, yPos);
+                yPos += 7;
+                
+                const weekAvg = document.getElementById('weekAvgKicks').textContent;
+                doc.text(`Weekly Average: ${weekAvg} kicks/day`, 30, yPos);
+                yPos += 7;
+                
+                const peakTime = document.getElementById('bestKickTime').textContent;
+                doc.text(`Peak Activity Time: ${peakTime}`, 30, yPos);
+                yPos += 7;
+                
+                const trend = document.getElementById('kickTrend').textContent;
+                doc.text(`7-Day Trend: ${trend}`, 30, yPos);
+                yPos += 15;
+            } else {
+                // Baby Care Report
+                doc.setFontSize(16);
+                doc.text("Baby Care Summary", 20, yPos);
+                yPos += 10;
+                
+                doc.setFontSize(12);
+                const feedings = document.getElementById('quickFeedings').textContent;
+                const pees = document.getElementById('weekPees').textContent;
+                const poops = document.getElementById('weekPoops').textContent;
+                
+                doc.text(`Today's Feedings: ${feedings}`, 30, yPos);
+                yPos += 7;
+                doc.text(`Week Wet Diapers: ${pees}`, 30, yPos);
+                yPos += 7;
+                doc.text(`Week Dirty Diapers: ${poops}`, 30, yPos);
+                yPos += 15;
+            }
+            
+            // Save
+            doc.save('avi-health-report.pdf');
+            showToast('📄 Report exported!', 'success');
+        }
+        
+        // Photo handling
+        function capturePhoto() {
+            document.getElementById('photoInput').click();
+        }
+        
+        function handlePhotoUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const photo = {
+                    data: e.target.result,
+                    timestamp: Date.now(),
+                    parent: currentUser
+                };
+                
+                photos.push(photo);
+                saveLocalData();
+                
+                showToast('📸 Photo saved!', 'success');
+            };
+            reader.readAsDataURL(file);
+        }
+        
+        function addMilestone(type) {
+            const milestone = {
+                type: type,
+                timestamp: Date.now(),
+                parent: currentUser
+            };
+            
+            milestones.push(milestone);
+            saveLocalData();
+            
+            showToast(`🎯 ${type} milestone added!`, 'success');
+            
+            // Update display
+            event.target.querySelector('div:last-child').textContent = new Date().toLocaleDateString();
+        }
+        
+        // Complete logs rendering
+        function refreshLogs() {
+            const today = new Date().toDateString();
+            
+            if (currentLogTab === 'feeding') {
+                const feedingLog = document.getElementById('feedingLog');
+                const todayFeedings = activities
+                    .filter(a => a.type === 'feeding' && new Date(a.timestamp).toDateString() === today)
+                    .reverse();
+                
+                if (todayFeedings.length === 0) {
+                    feedingLog.innerHTML = '<div style="text-align: center; padding: 20px; color: var(--text-light);">No feedings today</div>';
+                    return;
+                }
+                
+                feedingLog.innerHTML = todayFeedings.map(activity => {
+                    const parentBadge = activity.parent ? 
+                        `<span class="parent-badge ${activity.parent.role}" style="display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 10px; margin-left: 8px; font-weight: 600; background: ${activity.parent.role === 'mom' ? 'var(--mom-color)' : 'var(--dad-color)'}; color: white;">${activity.parent.name}</span>` : '';
+                    const duration = activity.duration ? ` • ${Math.round(activity.duration / 60)} min` : '';
+                    
+                    return `
+                        <div style="display: flex; align-items: center; padding: 12px; margin-bottom: 8px; background: var(--background); border-radius: 12px;">
+                            <div style="font-size: 20px; margin-right: 12px; width: 30px; text-align: center;">🍼</div>
+                            <div style="flex: 1;">
+                                <div style="font-weight: 600;">
+                                    ${activity.side} side feeding ${parentBadge}
+                                </div>
+                                <div style="font-size: 12px; color: var(--text-light);">
+                                    ${new Date(activity.timestamp).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}${duration}
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            } else if (currentLogTab === 'diapers') {
+                const diapersLog = document.getElementById('diapersLog');
+                const todayDiapers = activities
+                    .filter(a => a.type === 'diaper' && new Date(a.timestamp).toDateString() === today)
+                    .reverse();
+                
+                if (todayDiapers.length === 0) {
+                    diapersLog.innerHTML = '<div style="text-align: center; padding: 20px; color: var(--text-light);">No diaper changes today</div>';
+                    return;
+                }
+                
+                diapersLog.innerHTML = todayDiapers.map(activity => {
+                    const icon = activity.diaperType === 'pee' ? '💧' : '💩';
+                    const title = activity.diaperType === 'pee' ? 'Wet diaper' : 'Dirty diaper';
+                    const parentBadge = activity.parent ? 
+                        `<span class="parent-badge ${activity.parent.role}" style="display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 10px; margin-left: 8px; font-weight: 600; background: ${activity.parent.role === 'mom' ? 'var(--mom-color)' : 'var(--dad-color)'}; color: white;">${activity.parent.name}</span>` : '';
+                    
+                    return `
+                        <div style="display: flex; align-items: center; padding: 12px; margin-bottom: 8px; background: var(--background); border-radius: 12px;">
+                            <div style="font-size: 20px; margin-right: 12px; width: 30px; text-align: center;">${icon}</div>
+                            <div style="flex: 1;">
+                                <div style="font-weight: 600;">
+                                    ${title} ${parentBadge}
+                                </div>
+                                <div style="font-size: 12px; color: var(--text-light);">
+                                    ${new Date(activity.timestamp).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            } else {
+                const allLog = document.getElementById('allLog');
+                const todayActivities = activities
+                    .filter(a => new Date(a.timestamp).toDateString() === today)
+                    .reverse()
+                    .slice(0, 20);
+                
+                if (todayActivities.length === 0) {
+                    allLog.innerHTML = '<div style="text-align: center; padding: 20px; color: var(--text-light);">No activities today</div>';
+                    return;
+                }
+                
+                allLog.innerHTML = todayActivities.map(activity => {
+                    let icon = '📝';
+                    let title = 'Activity';
+                    
+                    if (activity.type === 'feeding') {
+                        icon = '🍼';
+                        title = `${activity.side} side feeding`;
+                        if (activity.duration) {
+                            title += ` • ${Math.round(activity.duration / 60)} min`;
+                        }
+                    } else if (activity.type === 'diaper') {
+                        icon = activity.diaperType === 'pee' ? '💧' : '💩';
+                        title = activity.diaperType === 'pee' ? 'Wet diaper' : 'Dirty diaper';
+                    }
+                    
+                    const parentBadge = activity.parent ? 
+                        `<span class="parent-badge ${activity.parent.role}" style="display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 10px; margin-left: 8px; font-weight: 600; background: ${activity.parent.role === 'mom' ? 'var(--mom-color)' : 'var(--dad-color)'}; color: white;">${activity.parent.name}</span>` : '';
+                    
+                    return `
+                        <div style="display: flex; align-items: center; padding: 12px; margin-bottom: 8px; background: var(--background); border-radius: 12px;">
+                            <div style="font-size: 20px; margin-right: 12px; width: 30px; text-align: center;">${icon}</div>
+                            <div style="flex: 1;">
+                                <div style="font-weight: 600;">
+                                    ${title} ${parentBadge}
+                                </div>
+                                <div style="font-size: 12px; color: var(--text-light);">
+                                    ${new Date(activity.timestamp).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            }
+        }
+
+        // ==========================================
+        // Initialize on load
+        // ==========================================
+        
+        window.addEventListener('load', () => {
+            init();
+            initCharts();
+        });
+        
+        console.log(`
+        ============================================
+        SMART TRACKER SETUP COMPLETE!
+        ============================================
+        
+        ✅ STEP 1: Firebase config ready (update with your keys)
+        ✅ STEP 2: Firebase initialized with messaging
+        ✅ STEP 3: Service worker registered
+        ✅ STEP 4: Notification permission system ready
+        ✅ STEP 5: Smart kick pattern analysis active
+        ✅ STEP 6: Predictive reminders for feeding/diapers
+        ✅ STEP 7: Core app functions initialized
+        ✅ STEP 8: Recording functions ready
+        ✅ STEP 9: UI updates configured
+        ✅ STEP 10: Notification system ready
+        
+        INGRID'S FEATURES:
+        1. ✅ Smart predictions for feeding/diaper changes
+        2. ✅ Advanced kick counting with 10-kick goal tracking
+        3. ✅ Pattern analysis and abnormal detection
+        4. ✅ Push notifications for all events
+        5. ✅ Quick stats widget
+        6. ✅ Appointment tracker with reminders
+        
+        TEST THE APP:
+        1. Click "Enable" on notification banner
+        2. Record some kicks - watch the progress bar
+        3. Switch to baby mode - see predictions
+        4. Add an appointment - get reminder
+        
+        ============================================
+        `);
+    </script>
+</body>
+</html>
