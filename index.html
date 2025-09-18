@@ -847,27 +847,157 @@
             </div>
         </div>
 
-        <!-- ANALYTICS TAB (simplified placeholder) -->
+        <!-- ANALYTICS TAB -->
         <div id="analyticsTab" class="tab-content">
-            <div style="text-align: center; padding: 40px; color: var(--text-light);">
-                <div style="font-size: 48px; margin-bottom: 20px;">📊</div>
-                <div>Analytics features available in full version</div>
+            <!-- Pregnancy Analytics -->
+            <div class="pregnancy-mode-content">
+                <div class="analytics-card" style="background: var(--card-bg); border-radius: 20px; padding: 20px; margin-bottom: 20px; box-shadow: var(--shadow);">
+                    <div class="section-title">
+                        <span>📈</span> Kick Patterns
+                    </div>
+                    <div class="period-selector" style="display: flex; justify-content: center; gap: 10px; margin-bottom: 15px;">
+                        <button class="period-btn active" onclick="changePeriod(7)" style="padding: 6px 16px; border: none; border-radius: 20px; background: var(--primary); color: white; font-size: 12px; font-weight: 600; cursor: pointer;">7 Days</button>
+                        <button class="period-btn" onclick="changePeriod(14)" style="padding: 6px 16px; border: none; border-radius: 20px; background: var(--accent); color: var(--primary-dark); font-size: 12px; font-weight: 600; cursor: pointer;">14 Days</button>
+                        <button class="period-btn" onclick="changePeriod(30)" style="padding: 6px 16px; border: none; border-radius: 20px; background: var(--accent); color: var(--primary-dark); font-size: 12px; font-weight: 600; cursor: pointer;">30 Days</button>
+                    </div>
+                    <div class="chart-container" style="position: relative; height: 200px; margin-top: 15px;">
+                        <canvas id="kickChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="analytics-card" style="background: var(--card-bg); border-radius: 20px; padding: 20px; margin-bottom: 20px; box-shadow: var(--shadow);">
+                    <div class="section-title">
+                        <span>🎯</span> Kick Insights
+                    </div>
+                    <div class="insight-grid" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-top: 15px;">
+                        <div class="insight-item" style="background: var(--accent); padding: 12px; border-radius: 12px; text-align: center;">
+                            <div class="insight-value" id="yesterdayKicks" style="font-size: 20px; font-weight: bold; color: var(--primary); margin-bottom: 4px;">0</div>
+                            <div class="insight-label" style="font-size: 11px; color: var(--text-light); text-transform: uppercase;">Yesterday</div>
+                        </div>
+                        <div class="insight-item" style="background: var(--accent); padding: 12px; border-radius: 12px; text-align: center;">
+                            <div class="insight-value" id="weekAvgKicks" style="font-size: 20px; font-weight: bold; color: var(--primary); margin-bottom: 4px;">0</div>
+                            <div class="insight-label" style="font-size: 11px; color: var(--text-light); text-transform: uppercase;">Daily Avg</div>
+                        </div>
+                        <div class="insight-item" style="background: var(--accent); padding: 12px; border-radius: 12px; text-align: center;">
+                            <div class="insight-value" id="bestKickTime" style="font-size: 20px; font-weight: bold; color: var(--primary); margin-bottom: 4px;">--</div>
+                            <div class="insight-label" style="font-size: 11px; color: var(--text-light); text-transform: uppercase;">Peak Time</div>
+                        </div>
+                        <div class="insight-item" style="background: var(--accent); padding: 12px; border-radius: 12px; text-align: center;">
+                            <div class="insight-value" id="kickTrend" style="font-size: 20px; font-weight: bold; color: var(--primary); margin-bottom: 4px;">--</div>
+                            <div class="insight-label" style="font-size: 11px; color: var(--text-light); text-transform: uppercase;">Trend</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Baby Analytics -->
+            <div class="baby-mode-content">
+                <!-- Feeding Analytics -->
+                <div class="analytics-card" style="background: var(--card-bg); border-radius: 20px; padding: 20px; margin-bottom: 20px; box-shadow: var(--shadow);">
+                    <div class="section-title">
+                        <span>🍼</span> Feeding Analytics
+                    </div>
+                    <div class="period-selector" style="display: flex; justify-content: center; gap: 10px; margin-bottom: 15px;">
+                        <button class="period-btn active" onclick="changePeriod(7)" style="padding: 6px 16px; border: none; border-radius: 20px; background: var(--primary); color: white; font-size: 12px; font-weight: 600; cursor: pointer;">7 Days</button>
+                        <button class="period-btn" onclick="changePeriod(14)" style="padding: 6px 16px; border: none; border-radius: 20px; background: var(--accent); color: var(--primary-dark); font-size: 12px; font-weight: 600; cursor: pointer;">14 Days</button>
+                        <button class="period-btn" onclick="changePeriod(30)" style="padding: 6px 16px; border: none; border-radius: 20px; background: var(--accent); color: var(--primary-dark); font-size: 12px; font-weight: 600; cursor: pointer;">30 Days</button>
+                    </div>
+                    <div class="chart-container" style="position: relative; height: 200px; margin-top: 15px;">
+                        <canvas id="feedingChart"></canvas>
+                    </div>
+                    <div class="insight-grid" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-top: 15px;">
+                        <div class="insight-item" style="background: var(--accent); padding: 12px; border-radius: 12px; text-align: center;">
+                            <div class="insight-value" id="avgFeedingTime" style="font-size: 20px; font-weight: bold; color: var(--primary); margin-bottom: 4px;">0 min</div>
+                            <div class="insight-label" style="font-size: 11px; color: var(--text-light); text-transform: uppercase;">Avg Duration</div>
+                        </div>
+                        <div class="insight-item" style="background: var(--accent); padding: 12px; border-radius: 12px; text-align: center;">
+                            <div class="insight-value" id="avgFeedingInterval" style="font-size: 20px; font-weight: bold; color: var(--primary); margin-bottom: 4px;">0h</div>
+                            <div class="insight-label" style="font-size: 11px; color: var(--text-light); text-transform: uppercase;">Avg Interval</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Diaper Analytics -->
+                <div class="analytics-card" style="background: var(--card-bg); border-radius: 20px; padding: 20px; margin-bottom: 20px; box-shadow: var(--shadow);">
+                    <div class="section-title">
+                        <span>🚼</span> Diaper Analytics
+                    </div>
+                    <div class="chart-container" style="position: relative; height: 200px; margin-top: 15px;">
+                        <canvas id="diaperChart"></canvas>
+                    </div>
+                    <div class="insight-grid" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-top: 15px;">
+                        <div class="insight-item" style="background: var(--accent); padding: 12px; border-radius: 12px; text-align: center;">
+                            <div class="insight-value" id="weekPees" style="font-size: 20px; font-weight: bold; color: var(--primary); margin-bottom: 4px;">0</div>
+                            <div class="insight-label" style="font-size: 11px; color: var(--text-light); text-transform: uppercase;">Week Wet</div>
+                        </div>
+                        <div class="insight-item" style="background: var(--accent); padding: 12px; border-radius: 12px; text-align: center;">
+                            <div class="insight-value" id="weekPoops" style="font-size: 20px; font-weight: bold; color: var(--primary); margin-bottom: 4px;">0</div>
+                            <div class="insight-label" style="font-size: 11px; color: var(--text-light); text-transform: uppercase;">Week Dirty</div>
+                        </div>
+                        <div class="insight-item" style="background: var(--accent); padding: 12px; border-radius: 12px; text-align: center;">
+                            <div class="insight-value" id="avgDiapers" style="font-size: 20px; font-weight: bold; color: var(--primary); margin-bottom: 4px;">0</div>
+                            <div class="insight-label" style="font-size: 11px; color: var(--text-light); text-transform: uppercase;">Daily Avg</div>
+                        </div>
+                        <div class="insight-item" style="background: var(--accent); padding: 12px; border-radius: 12px; text-align: center;">
+                            <div class="insight-value" id="diaperRatio" style="font-size: 20px; font-weight: bold; color: var(--primary); margin-bottom: 4px;">--</div>
+                            <div class="insight-label" style="font-size: 11px; color: var(--text-light); text-transform: uppercase;">Wet:Dirty</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Export Section -->
+            <div class="export-section" style="background: var(--card-bg); border-radius: 20px; padding: 20px; margin-top: 20px; box-shadow: var(--shadow); text-align: center;">
+                <div class="section-title">
+                    <span>📄</span> Export Reports
+                </div>
+                <button class="btn" onclick="exportComprehensiveReport()" style="background: linear-gradient(135deg, var(--success) 0%, #6ba644 100%); color: white; width: 100%; padding: 12px 20px; border: none; border-radius: 12px; font-size: 15px; font-weight: 600; cursor: pointer;">
+                    Download Complete Report (PDF)
+                </button>
+                <p style="margin-top: 10px; font-size: 12px; color: var(--text-light);">
+                    Professional format for doctor visits
+                </p>
             </div>
         </div>
 
-        <!-- MEMORIES TAB (simplified placeholder) -->
+        <!-- MEMORIES TAB (Simplified but functional) -->
         <div id="memoriesTab" class="tab-content">
-            <div style="text-align: center; padding: 40px; color: var(--text-light);">
-                <div style="font-size: 48px; margin-bottom: 20px;">📸</div>
-                <div>Photo memories available in full version</div>
+            <div class="memory-card" style="background: var(--card-bg); border-radius: 20px; padding: 20px; margin-bottom: 20px; box-shadow: var(--shadow);">
+                <div class="section-title">
+                    <span>📸</span> Today's Photo
+                </div>
+                <div class="photo-upload-btn" onclick="capturePhoto()" style="width: 100%; height: 200px; border: 3px dashed var(--accent); border-radius: 15px; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; background: var(--background);">
+                    <span style="font-size: 40px;">📷</span>
+                    <span style="margin-top: 10px; color: var(--text-light);">Tap to add photo</span>
+                </div>
+                <input type="file" id="photoInput" accept="image/*" capture="camera" style="display: none;" onchange="handlePhotoUpload(event)">
+            </div>
+
+            <div class="memory-card" style="background: var(--card-bg); border-radius: 20px; padding: 20px; margin-bottom: 20px; box-shadow: var(--shadow);">
+                <div class="section-title">
+                    <span>🎯</span> Milestones
+                </div>
+                <div id="milestoneList">
+                    <div class="milestone-item" onclick="addMilestone('First Kick')" style="display: flex; align-items: center; padding: 15px; background: var(--background); border-radius: 15px; margin-bottom: 15px; cursor: pointer;">
+                        <div style="font-size: 30px; margin-right: 15px;">👣</div>
+                        <div style="flex: 1;">
+                            <div style="font-weight: 600; color: var(--primary-dark); margin-bottom: 4px;">First Kick Felt</div>
+                            <div style="font-size: 12px; color: var(--text-light);">Tap to record</div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
 
-        <!-- CONNECT TAB (simplified placeholder) -->
+        <!-- CONNECT TAB (Keep simple per your request) -->
         <div id="connectTab" class="tab-content">
-            <div style="text-align: center; padding: 40px; color: var(--text-light);">
-                <div style="font-size: 48px; margin-bottom: 20px;">💕</div>
-                <div>Partner features available in full version</div>
+            <div class="message-card" style="background: var(--card-bg); border-radius: 20px; padding: 20px; margin-bottom: 20px; box-shadow: var(--shadow);">
+                <div class="section-title">
+                    <span>💕</span> Partner Connection
+                </div>
+                <p style="text-align: center; padding: 20px; color: var(--text-light);">
+                    Both partners using the app will see synchronized data in real-time through Firebase!
+                </p>
             </div>
         </div>
     </div>
@@ -1755,10 +1885,461 @@
         }
 
         // ==========================================
+        // ANALYTICS FUNCTIONS
+        // ==========================================
+        
+        let kickChart = null;
+        let feedingChart = null;
+        let diaperChart = null;
+        let currentPeriod = 7;
+        let photos = [];
+        let milestones = [];
+        
+        function initCharts() {
+            // Initialize kick chart
+            const kickCtx = document.getElementById('kickChart');
+            if (kickCtx) {
+                kickChart = new Chart(kickCtx, {
+                    type: 'bar',
+                    data: { 
+                        labels: [], 
+                        datasets: [{ 
+                            label: 'Daily Kicks', 
+                            data: [], 
+                            backgroundColor: 'rgba(254, 197, 229, 0.6)',
+                            borderColor: 'rgba(254, 197, 229, 1)',
+                            borderWidth: 1
+                        }] 
+                    },
+                    options: { 
+                        responsive: true, 
+                        maintainAspectRatio: false,
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                ticks: {
+                                    stepSize: 5
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+            
+            // Initialize feeding chart
+            const feedingCtx = document.getElementById('feedingChart');
+            if (feedingCtx) {
+                feedingChart = new Chart(feedingCtx, {
+                    type: 'bar',
+                    data: { 
+                        labels: [], 
+                        datasets: [{ 
+                            label: 'Daily Feedings', 
+                            data: [], 
+                            backgroundColor: 'rgba(135, 206, 235, 0.6)',
+                            borderColor: 'rgba(135, 206, 235, 1)',
+                            borderWidth: 1
+                        }] 
+                    },
+                    options: { 
+                        responsive: true, 
+                        maintainAspectRatio: false,
+                        scales: {
+                            y: {
+                                beginAtZero: true
+                            }
+                        }
+                    }
+                });
+            }
+            
+            // Initialize diaper chart
+            const diaperCtx = document.getElementById('diaperChart');
+            if (diaperCtx) {
+                diaperChart = new Chart(diaperCtx, {
+                    type: 'pie',
+                    data: { 
+                        labels: ['Wet', 'Dirty'], 
+                        datasets: [{ 
+                            data: [0, 0], 
+                            backgroundColor: ['#ffe8a1', '#d4a373'] 
+                        }] 
+                    },
+                    options: { 
+                        responsive: true, 
+                        maintainAspectRatio: false 
+                    }
+                });
+            }
+        }
+        
+        function changePeriod(days) {
+            currentPeriod = days;
+            
+            // Update button states
+            document.querySelectorAll('.period-btn').forEach(btn => {
+                btn.classList.remove('active');
+                btn.style.background = 'var(--accent)';
+                btn.style.color = 'var(--primary-dark)';
+            });
+            event.target.classList.add('active');
+            event.target.style.background = 'var(--primary)';
+            event.target.style.color = 'white';
+            
+            updateAnalytics();
+        }
+        
+        function updateAnalytics() {
+            if (currentTab !== 'analytics') return;
+            
+            const now = new Date();
+            
+            if (currentMode === 'pregnancy') {
+                updateKickAnalytics(now);
+            } else {
+                updateBabyModeAnalytics(now);
+            }
+        }
+        
+        function updateKickAnalytics(now) {
+            // Calculate kick data for selected period
+            const labels = [];
+            const chartData = [];
+            
+            for (let i = currentPeriod - 1; i >= 0; i--) {
+                const date = new Date(now);
+                date.setDate(date.getDate() - i);
+                const dayKicks = kicks.filter(k => 
+                    new Date(k.timestamp).toDateString() === date.toDateString()
+                );
+                
+                labels.push(date.toLocaleDateString('en-US', { weekday: 'short' }));
+                chartData.push(dayKicks.length);
+            }
+            
+            // Update chart
+            if (kickChart) {
+                kickChart.data.labels = labels;
+                kickChart.data.datasets[0].data = chartData;
+                kickChart.update();
+            }
+            
+            // Update insights
+            const yesterday = new Date(now);
+            yesterday.setDate(yesterday.getDate() - 1);
+            const yesterdayKicks = kicks.filter(k => 
+                new Date(k.timestamp).toDateString() === yesterday.toDateString()
+            );
+            
+            document.getElementById('yesterdayKicks').textContent = yesterdayKicks.length;
+            
+            const weekAvg = Math.round(chartData.reduce((a, b) => a + b, 0) / currentPeriod);
+            document.getElementById('weekAvgKicks').textContent = weekAvg;
+            
+            // Find peak hour
+            const todayKicks = kicks.filter(k => 
+                new Date(k.timestamp).toDateString() === now.toDateString()
+            );
+            const hourlyData = new Array(24).fill(0);
+            todayKicks.forEach(k => {
+                const hour = new Date(k.timestamp).getHours();
+                hourlyData[hour]++;
+            });
+            const peakHour = hourlyData.indexOf(Math.max(...hourlyData));
+            document.getElementById('bestKickTime').textContent = peakHour >= 0 ? `${peakHour}:00` : '--';
+            
+            // Calculate trend
+            const halfPoint = Math.floor(chartData.length / 2);
+            const firstHalf = chartData.slice(0, halfPoint).reduce((a, b) => a + b, 0) / halfPoint || 0;
+            const secondHalf = chartData.slice(halfPoint).reduce((a, b) => a + b, 0) / (chartData.length - halfPoint) || 0;
+            const trend = secondHalf > firstHalf ? '📈 Up' : secondHalf < firstHalf ? '📉 Down' : '➡️ Stable';
+            document.getElementById('kickTrend').textContent = trend;
+        }
+        
+        function updateBabyModeAnalytics(now) {
+            // Feeding Analytics
+            const labels = [];
+            const feedingData = [];
+            
+            for (let i = currentPeriod - 1; i >= 0; i--) {
+                const date = new Date(now);
+                date.setDate(date.getDate() - i);
+                const dayFeedings = activities.filter(a => 
+                    a.type === 'feeding' && 
+                    new Date(a.timestamp).toDateString() === date.toDateString()
+                );
+                
+                labels.push(date.toLocaleDateString('en-US', { weekday: 'short' }));
+                feedingData.push(dayFeedings.length);
+            }
+            
+            if (feedingChart) {
+                feedingChart.data.labels = labels;
+                feedingChart.data.datasets[0].data = feedingData;
+                feedingChart.update();
+            }
+            
+            // Calculate feeding insights
+            const allFeedings = activities.filter(a => a.type === 'feeding');
+            const avgDuration = allFeedings.reduce((acc, f) => acc + (f.duration || 0), 0) / allFeedings.length;
+            document.getElementById('avgFeedingTime').textContent = Math.round(avgDuration / 60) + ' min';
+            
+            // Calculate average interval
+            const sortedFeedings = allFeedings.sort((a, b) => a.timestamp - b.timestamp);
+            let totalInterval = 0;
+            let intervalCount = 0;
+            for (let i = 1; i < sortedFeedings.length; i++) {
+                totalInterval += sortedFeedings[i].timestamp - sortedFeedings[i-1].timestamp;
+                intervalCount++;
+            }
+            const avgInterval = intervalCount > 0 ? totalInterval / intervalCount : 0;
+            const avgIntervalHours = Math.round(avgInterval / (1000 * 60 * 60));
+            document.getElementById('avgFeedingInterval').textContent = avgIntervalHours + 'h';
+            
+            // Diaper Analytics
+            const weekDiapers = activities.filter(a => 
+                a.type === 'diaper' && 
+                new Date(a.timestamp) > new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
+            );
+            
+            const weekPees = weekDiapers.filter(a => a.diaperType === 'pee').length;
+            const weekPoops = weekDiapers.filter(a => a.diaperType === 'poop').length;
+            
+            document.getElementById('weekPees').textContent = weekPees;
+            document.getElementById('weekPoops').textContent = weekPoops;
+            document.getElementById('avgDiapers').textContent = Math.round((weekPees + weekPoops) / 7);
+            document.getElementById('diaperRatio').textContent = weekPees + ':' + weekPoops;
+            
+            if (diaperChart) {
+                diaperChart.data.datasets[0].data = [weekPees, weekPoops];
+                diaperChart.update();
+            }
+        }
+        
+        function exportComprehensiveReport() {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            
+            // Title
+            doc.setFontSize(20);
+            doc.text("Avi's Comprehensive Health Report", 20, 20);
+            
+            // Date
+            doc.setFontSize(12);
+            doc.text(`Generated: ${new Date().toLocaleDateString()}`, 20, 30);
+            doc.text(`Mode: ${currentMode === 'pregnancy' ? 'Pregnancy' : 'Baby Care'}`, 20, 37);
+            
+            let yPos = 50;
+            
+            if (currentMode === 'pregnancy') {
+                // Pregnancy Report
+                doc.setFontSize(16);
+                doc.text("Kick Activity Summary", 20, yPos);
+                yPos += 10;
+                
+                doc.setFontSize(12);
+                const today = kicks.filter(k => 
+                    new Date(k.timestamp).toDateString() === new Date().toDateString()
+                ).length;
+                doc.text(`Today's Kicks: ${today}`, 30, yPos);
+                yPos += 7;
+                
+                const weekAvg = document.getElementById('weekAvgKicks').textContent;
+                doc.text(`Weekly Average: ${weekAvg} kicks/day`, 30, yPos);
+                yPos += 7;
+                
+                const peakTime = document.getElementById('bestKickTime').textContent;
+                doc.text(`Peak Activity Time: ${peakTime}`, 30, yPos);
+                yPos += 7;
+                
+                const trend = document.getElementById('kickTrend').textContent;
+                doc.text(`7-Day Trend: ${trend}`, 30, yPos);
+                yPos += 15;
+            } else {
+                // Baby Care Report
+                doc.setFontSize(16);
+                doc.text("Baby Care Summary", 20, yPos);
+                yPos += 10;
+                
+                doc.setFontSize(12);
+                const feedings = document.getElementById('quickFeedings').textContent;
+                const pees = document.getElementById('weekPees').textContent;
+                const poops = document.getElementById('weekPoops').textContent;
+                
+                doc.text(`Today's Feedings: ${feedings}`, 30, yPos);
+                yPos += 7;
+                doc.text(`Week Wet Diapers: ${pees}`, 30, yPos);
+                yPos += 7;
+                doc.text(`Week Dirty Diapers: ${poops}`, 30, yPos);
+                yPos += 15;
+            }
+            
+            // Save
+            doc.save('avi-health-report.pdf');
+            showToast('📄 Report exported!', 'success');
+        }
+        
+        // Photo handling
+        function capturePhoto() {
+            document.getElementById('photoInput').click();
+        }
+        
+        function handlePhotoUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const photo = {
+                    data: e.target.result,
+                    timestamp: Date.now(),
+                    parent: currentUser
+                };
+                
+                photos.push(photo);
+                saveLocalData();
+                
+                showToast('📸 Photo saved!', 'success');
+            };
+            reader.readAsDataURL(file);
+        }
+        
+        function addMilestone(type) {
+            const milestone = {
+                type: type,
+                timestamp: Date.now(),
+                parent: currentUser
+            };
+            
+            milestones.push(milestone);
+            saveLocalData();
+            
+            showToast(`🎯 ${type} milestone added!`, 'success');
+            
+            // Update display
+            event.target.querySelector('div:last-child').textContent = new Date().toLocaleDateString();
+        }
+        
+        // Complete logs rendering
+        function refreshLogs() {
+            const today = new Date().toDateString();
+            
+            if (currentLogTab === 'feeding') {
+                const feedingLog = document.getElementById('feedingLog');
+                const todayFeedings = activities
+                    .filter(a => a.type === 'feeding' && new Date(a.timestamp).toDateString() === today)
+                    .reverse();
+                
+                if (todayFeedings.length === 0) {
+                    feedingLog.innerHTML = '<div style="text-align: center; padding: 20px; color: var(--text-light);">No feedings today</div>';
+                    return;
+                }
+                
+                feedingLog.innerHTML = todayFeedings.map(activity => {
+                    const parentBadge = activity.parent ? 
+                        `<span class="parent-badge ${activity.parent.role}" style="display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 10px; margin-left: 8px; font-weight: 600; background: ${activity.parent.role === 'mom' ? 'var(--mom-color)' : 'var(--dad-color)'}; color: white;">${activity.parent.name}</span>` : '';
+                    const duration = activity.duration ? ` • ${Math.round(activity.duration / 60)} min` : '';
+                    
+                    return `
+                        <div style="display: flex; align-items: center; padding: 12px; margin-bottom: 8px; background: var(--background); border-radius: 12px;">
+                            <div style="font-size: 20px; margin-right: 12px; width: 30px; text-align: center;">🍼</div>
+                            <div style="flex: 1;">
+                                <div style="font-weight: 600;">
+                                    ${activity.side} side feeding ${parentBadge}
+                                </div>
+                                <div style="font-size: 12px; color: var(--text-light);">
+                                    ${new Date(activity.timestamp).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}${duration}
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            } else if (currentLogTab === 'diapers') {
+                const diapersLog = document.getElementById('diapersLog');
+                const todayDiapers = activities
+                    .filter(a => a.type === 'diaper' && new Date(a.timestamp).toDateString() === today)
+                    .reverse();
+                
+                if (todayDiapers.length === 0) {
+                    diapersLog.innerHTML = '<div style="text-align: center; padding: 20px; color: var(--text-light);">No diaper changes today</div>';
+                    return;
+                }
+                
+                diapersLog.innerHTML = todayDiapers.map(activity => {
+                    const icon = activity.diaperType === 'pee' ? '💧' : '💩';
+                    const title = activity.diaperType === 'pee' ? 'Wet diaper' : 'Dirty diaper';
+                    const parentBadge = activity.parent ? 
+                        `<span class="parent-badge ${activity.parent.role}" style="display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 10px; margin-left: 8px; font-weight: 600; background: ${activity.parent.role === 'mom' ? 'var(--mom-color)' : 'var(--dad-color)'}; color: white;">${activity.parent.name}</span>` : '';
+                    
+                    return `
+                        <div style="display: flex; align-items: center; padding: 12px; margin-bottom: 8px; background: var(--background); border-radius: 12px;">
+                            <div style="font-size: 20px; margin-right: 12px; width: 30px; text-align: center;">${icon}</div>
+                            <div style="flex: 1;">
+                                <div style="font-weight: 600;">
+                                    ${title} ${parentBadge}
+                                </div>
+                                <div style="font-size: 12px; color: var(--text-light);">
+                                    ${new Date(activity.timestamp).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            } else {
+                const allLog = document.getElementById('allLog');
+                const todayActivities = activities
+                    .filter(a => new Date(a.timestamp).toDateString() === today)
+                    .reverse()
+                    .slice(0, 20);
+                
+                if (todayActivities.length === 0) {
+                    allLog.innerHTML = '<div style="text-align: center; padding: 20px; color: var(--text-light);">No activities today</div>';
+                    return;
+                }
+                
+                allLog.innerHTML = todayActivities.map(activity => {
+                    let icon = '📝';
+                    let title = 'Activity';
+                    
+                    if (activity.type === 'feeding') {
+                        icon = '🍼';
+                        title = `${activity.side} side feeding`;
+                        if (activity.duration) {
+                            title += ` • ${Math.round(activity.duration / 60)} min`;
+                        }
+                    } else if (activity.type === 'diaper') {
+                        icon = activity.diaperType === 'pee' ? '💧' : '💩';
+                        title = activity.diaperType === 'pee' ? 'Wet diaper' : 'Dirty diaper';
+                    }
+                    
+                    const parentBadge = activity.parent ? 
+                        `<span class="parent-badge ${activity.parent.role}" style="display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 10px; margin-left: 8px; font-weight: 600; background: ${activity.parent.role === 'mom' ? 'var(--mom-color)' : 'var(--dad-color)'}; color: white;">${activity.parent.name}</span>` : '';
+                    
+                    return `
+                        <div style="display: flex; align-items: center; padding: 12px; margin-bottom: 8px; background: var(--background); border-radius: 12px;">
+                            <div style="font-size: 20px; margin-right: 12px; width: 30px; text-align: center;">${icon}</div>
+                            <div style="flex: 1;">
+                                <div style="font-weight: 600;">
+                                    ${title} ${parentBadge}
+                                </div>
+                                <div style="font-size: 12px; color: var(--text-light);">
+                                    ${new Date(activity.timestamp).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            }
+        }
+
+        // ==========================================
         // Initialize on load
         // ==========================================
         
-        window.addEventListener('load', init);
+        window.addEventListener('load', () => {
+            init();
+            initCharts();
+        });
         
         console.log(`
         ============================================
