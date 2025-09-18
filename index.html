@@ -1198,7 +1198,25 @@
         `;
     }).join('');
 }
-
+function deleteKick(kickId) {
+    if (confirm('Delete this kick?')) {
+        // Remove from Firebase if it has a Firebase ID
+        if (kicksRef && kickId && kickId.startsWith('-')) {
+            kicksRef.child(kickId).remove();
+        }
+        
+        // Remove from local array
+        kicks = kicks.filter(k => k.firebaseId !== kickId && k.id !== kickId);
+        
+        // Update displays
+        updateStats();
+        renderKickLog();
+        updateAnalytics();
+        
+        // Save to local storage
+        saveLocalData();
+    }
+}
         function updateAnalytics() {
             // Weekly trend
             const now = Date.now();
