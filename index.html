@@ -758,12 +758,46 @@
             <div class="advanced-analytics">
                 <h3 style="font-size: 18px; margin-bottom: 15px; color: var(--primary-dark);">📊 Detailed Analytics</h3>
                 
-                <div style="margin-bottom: 20px;">
+                <!-- Period Selector -->
+                <div style="display: flex; justify-content: center; gap: 10px; margin-bottom: 20px;">
+                    <button class="btn" id="period7" onclick="changePeriod(7)" style="background: var(--primary); color: white; padding: 8px 16px; font-size: 13px;">7 Days</button>
+                    <button class="btn" id="period14" onclick="changePeriod(14)" style="background: var(--accent); color: var(--text); padding: 8px 16px; font-size: 13px;">14 Days</button>
+                    <button class="btn" id="period30" onclick="changePeriod(30)" style="background: var(--accent); color: var(--text); padding: 8px 16px; font-size: 13px;">30 Days</button>
+                </div>
+                
+                <!-- Daily Kicks Chart -->
+                <div style="background: var(--card-bg); padding: 20px; border-radius: 15px; margin-bottom: 20px; box-shadow: var(--shadow);">
+                    <h4 style="font-size: 16px; margin-bottom: 15px;">Daily Kick Patterns</h4>
                     <canvas id="weekChart" style="max-height: 200px;"></canvas>
                 </div>
                 
-                <div style="margin-bottom: 20px;">
+                <!-- Hourly Pattern Chart -->
+                <div style="background: var(--card-bg); padding: 20px; border-radius: 15px; margin-bottom: 20px; box-shadow: var(--shadow);">
+                    <h4 style="font-size: 16px; margin-bottom: 15px;">Hourly Activity Distribution</h4>
                     <canvas id="hourChart" style="max-height: 200px;"></canvas>
+                </div>
+                
+                <!-- Analytics Insights -->
+                <div style="background: var(--card-bg); padding: 20px; border-radius: 15px; margin-bottom: 20px; box-shadow: var(--shadow);">
+                    <h4 style="font-size: 16px; margin-bottom: 15px;">📈 Period Insights</h4>
+                    <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px;">
+                        <div style="background: var(--accent); padding: 12px; border-radius: 10px; text-align: center;">
+                            <div style="font-size: 20px; font-weight: bold; color: var(--primary);" id="periodAverage">0</div>
+                            <div style="font-size: 11px; color: var(--text-light); text-transform: uppercase;">Daily Avg</div>
+                        </div>
+                        <div style="background: var(--accent); padding: 12px; border-radius: 10px; text-align: center;">
+                            <div style="font-size: 20px; font-weight: bold; color: var(--primary);" id="periodTotal">0</div>
+                            <div style="font-size: 11px; color: var(--text-light); text-transform: uppercase;">Total Kicks</div>
+                        </div>
+                        <div style="background: var(--accent); padding: 12px; border-radius: 10px; text-align: center;">
+                            <div style="font-size: 20px; font-weight: bold; color: var(--primary);" id="periodBest">0</div>
+                            <div style="font-size: 11px; color: var(--text-light); text-transform: uppercase;">Best Day</div>
+                        </div>
+                        <div style="background: var(--accent); padding: 12px; border-radius: 10px; text-align: center;">
+                            <div style="font-size: 20px; font-weight: bold; color: var(--primary);" id="periodTrend">--</div>
+                            <div style="font-size: 11px; color: var(--text-light); text-transform: uppercase;">Trend</div>
+                        </div>
+                    </div>
                 </div>
                 
                 <button class="btn btn-primary" onclick="exportReport()" style="width: 100%; margin-top: 20px;">
@@ -787,10 +821,6 @@
         <div class="nav-item" onclick="switchTab('analytics')">
             <div style="font-size: 24px;">📊</div>
             <div style="font-size: 11px;">Analytics</div>
-        </div>
-        <div class="nav-item" onclick="switchTab('settings')">
-            <div style="font-size: 24px;">⚙️</div>
-            <div style="font-size: 11px;">Settings</div>
         </div>
     </div>
 
@@ -1231,26 +1261,73 @@
         // ==========================================
         // CHARTS
         // ==========================================
+        let weekChartInstance = null;
+        let hourChartInstance = null;
+        let currentPeriod = 7;
+        
         function initCharts() {
-            // Week chart
+            updateCharts();
+        }
+        
+        function changePeriod(days) {
+            currentPeriod = days;
+            
+            // Update button styles
+            ['period7', 'period14', 'period30'].forEach(id => {
+                const btn = document.getElementById(id);
+                if (btn) {
+                    if (id === 'period' + days) {
+                        btn.style.background = 'var(--primary)';
+                        btn.style.color = 'white';
+                    } else {
+                        btn.style.background = 'var(--accent)';
+                        btn.style.color = 'var(--text)';
+                    }
+                }
+            });
+            
+            updateCharts();
+            updatePeriodInsights();
+        }
+        
+        function updateCharts() {
+            // Destroy existing charts if they exist
+            if (weekChartInstance) {
+                weekChartInstance.destroy();
+            }
+            if (hourChartInstance) {
+                hourChartInstance.destroy();
+            }
+            
+            // Week/Period chart
             const weekCtx = document.getElementById('weekChart');
             if (weekCtx) {
-                new Chart(weekCtx, {
+                weekChartInstance = new Chart(weekCtx, {
                     type: 'bar',
                     data: {
-                        labels: getLast7Days(),
+                        labels: getPeriodDays(currentPeriod),
                         datasets: [{
                             label: 'Daily Kicks',
-                            data: getDailyKickCounts(),
-                            backgroundColor: 'rgba(155, 123, 184, 0.6)'
+                            data: getPeriodKickCounts(currentPeriod),
+                            backgroundColor: 'rgba(155, 123, 184, 0.6)',
+                            borderColor: 'rgba(155, 123, 184, 1)',
+                            borderWidth: 1
                         }]
                     },
                     options: {
                         responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                ticks: {
+                                    stepSize: 5
+                                }
+                            }
+                        },
                         plugins: {
-                            title: {
-                                display: true,
-                                text: 'Weekly Kick Pattern'
+                            legend: {
+                                display: false
                             }
                         }
                     }
@@ -1260,7 +1337,7 @@
             // Hour chart
             const hourCtx = document.getElementById('hourChart');
             if (hourCtx) {
-                new Chart(hourCtx, {
+                hourChartInstance = new Chart(hourCtx, {
                     type: 'line',
                     data: {
                         labels: Array.from({length: 24}, (_, i) => i + ':00'),
@@ -1268,15 +1345,22 @@
                             label: 'Hourly Activity',
                             data: getHourlyKickCounts(),
                             borderColor: 'rgba(155, 123, 184, 1)',
-                            tension: 0.4
+                            backgroundColor: 'rgba(155, 123, 184, 0.1)',
+                            tension: 0.4,
+                            fill: true
                         }]
                     },
                     options: {
                         responsive: true,
+                        maintainAspectRatio: false,
                         plugins: {
-                            title: {
-                                display: true,
-                                text: 'Daily Activity Pattern'
+                            legend: {
+                                display: false
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true
                             }
                         }
                     }
@@ -1284,19 +1368,23 @@
             }
         }
 
-        function getLast7Days() {
-            const days = [];
-            for (let i = 6; i >= 0; i--) {
+        function getPeriodDays(days) {
+            const labels = [];
+            for (let i = days - 1; i >= 0; i--) {
                 const date = new Date();
                 date.setDate(date.getDate() - i);
-                days.push(date.toLocaleDateString('en-US', { weekday: 'short' }));
+                if (days <= 7) {
+                    labels.push(date.toLocaleDateString('en-US', { weekday: 'short' }));
+                } else {
+                    labels.push(date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }));
+                }
             }
-            return days;
+            return labels;
         }
 
-        function getDailyKickCounts() {
+        function getPeriodKickCounts(days) {
             const counts = [];
-            for (let i = 6; i >= 0; i--) {
+            for (let i = days - 1; i >= 0; i--) {
                 const date = new Date();
                 date.setDate(date.getDate() - i);
                 const dayCount = kicks.filter(k => 
@@ -1305,6 +1393,34 @@
                 counts.push(dayCount);
             }
             return counts;
+        }
+        
+        function updatePeriodInsights() {
+            const counts = getPeriodKickCounts(currentPeriod);
+            
+            // Average
+            const avg = Math.round(counts.reduce((a, b) => a + b, 0) / counts.length);
+            document.getElementById('periodAverage').textContent = avg;
+            
+            // Total
+            const total = counts.reduce((a, b) => a + b, 0);
+            document.getElementById('periodTotal').textContent = total;
+            
+            // Best day
+            const best = Math.max(...counts);
+            document.getElementById('periodBest').textContent = best;
+            
+            // Trend
+            const firstHalf = counts.slice(0, Math.floor(counts.length / 2));
+            const secondHalf = counts.slice(Math.floor(counts.length / 2));
+            const firstAvg = firstHalf.reduce((a, b) => a + b, 0) / firstHalf.length || 0;
+            const secondAvg = secondHalf.reduce((a, b) => a + b, 0) / secondHalf.length || 0;
+            
+            let trend = '➡️';
+            if (secondAvg > firstAvg * 1.1) trend = '📈';
+            else if (secondAvg < firstAvg * 0.9) trend = '📉';
+            
+            document.getElementById('periodTrend').textContent = trend;
         }
 
         function getHourlyKickCounts() {
@@ -1349,20 +1465,38 @@
                 tab.classList.remove('active');
             });
             
-            if (tabName === 'settings') {
-                openSettings();
-            } else {
-                document.getElementById(tabName + 'Tab').classList.add('active');
+            document.getElementById(tabName + 'Tab').classList.add('active');
+            
+            // Update charts when switching to analytics
+            if (tabName === 'analytics') {
+                setTimeout(() => {
+                    updateCharts();
+                    updatePeriodInsights();
+                }, 100);
             }
         }
 
         function switchMode(mode) {
             currentMode = mode;
             document.body.className = mode + '-mode';
+            
+            // Update mode buttons
             document.querySelectorAll('.mode-btn').forEach(btn => {
                 btn.classList.remove('active');
             });
-            event.target.classList.add('active');
+            
+            // Find the button that was clicked or the correct mode button
+            const pregnancyBtn = document.querySelector('.mode-btn:first-child');
+            const babyBtn = document.querySelector('.mode-btn:last-child');
+            
+            if (mode === 'pregnancy') {
+                pregnancyBtn.classList.add('active');
+            } else {
+                babyBtn.classList.add('active');
+            }
+            
+            // Update header icon
+            document.querySelector('.header > div:first-child').textContent = mode === 'pregnancy' ? '🤰' : '👶';
         }
 
         function openSettings() {
