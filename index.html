@@ -1599,64 +1599,71 @@
         }
 
         function calculateKickWindows(todayKicks) {
-            kickWindows = [];
+    kickWindows = [];
+    
+    if (todayKicks.length < 10) {
+        document.getElementById('kickWindowsList').innerHTML = 
+            '<div style="text-align: center; padding: 20px; color: var(--text-light);">Need at least 10 kicks for window analysis</div>';
+        document.getElementById('fetalActiveWindows').textContent = '0';
+        document.getElementById('fetalBestTime').textContent = '--';
+        document.getElementById('fetalAvgTime').textContent = '--';
+        return;
+    }
+    
+    // Find all 10-kick windows
+    for (let i = 0; i <= todayKicks.length - 10; i++) {
+        const window = todayKicks.slice(i, i + 10);
+        const duration = window[9].timestamp - window[0].timestamp;
+        const minutes = Math.floor(duration / 60000);
+        
+        kickWindows.push({
+            startTime: window[0].timestamp,
+            endTime: window[9].timestamp,
+            duration: minutes,
+            startKick: i + 1,
+            endKick: i + 10
+        });
+    }
+    
+    // Update stats with CORRECT calculation
+    document.getElementById('fetalActiveWindows').textContent = kickWindows.length;
+    
+    if (kickWindows.length > 0) {
+        // Best time
+        const bestWindow = kickWindows.reduce((a, b) => a.duration < b.duration ? a : b);
+        document.getElementById('fetalBestTime').textContent = bestWindow.duration + 'm';
+        
+        // FIXED Average calculation - using only the windows we have
+        const totalDuration = kickWindows.reduce((sum, w) => sum + w.duration, 0);
+        const avgDuration = Math.round(totalDuration / kickWindows.length);
+        document.getElementById('fetalAvgTime').textContent = avgDuration + 'm';
+        
+        // Render windows list (keep last 5 for display)
+        document.getElementById('kickWindowsList').innerHTML = kickWindows.slice(-5).reverse().map(window => {
+            const startTime = new Date(window.startTime).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+            const endTime = new Date(window.endTime).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+            const badgeClass = window.duration <= 120 ? 'badge-success' : 'badge-warning';
+            const badgeText = window.duration <= 120 ? 'Normal' : 'Slow';
             
-            if (todayKicks.length < 10) {
-                document.getElementById('kickWindowsList').innerHTML = 
-                    '<div style="text-align: center; padding: 20px; color: var(--text-light);">Need at least 10 kicks for window analysis</div>';
-                document.getElementById('fetalActiveWindows').textContent = '0';
-                document.getElementById('fetalBestTime').textContent = '--';
-                document.getElementById('fetalAvgTime').textContent = '--';
-                return;
-            }
-            
-            // Find all 10-kick windows
-            for (let i = 0; i <= todayKicks.length - 10; i++) {
-                const window = todayKicks.slice(i, i + 10);
-                const duration = window[9].timestamp - window[0].timestamp;
-                const minutes = Math.floor(duration / 60000);
-                
-                kickWindows.push({
-                    startTime: window[0].timestamp,
-                    endTime: window[9].timestamp,
-                    duration: minutes,
-                    startKick: i + 1,
-                    endKick: i + 10
-                });
-            }
-            
-            // Update stats
-            document.getElementById('fetalActiveWindows').textContent = kickWindows.length;
-            
-            if (kickWindows.length > 0) {
-                // Best time
-                const bestWindow = kickWindows.reduce((a, b) => a.duration < b.duration ? a : b);
-                document.getElementById('fetalBestTime').textContent = bestWindow.duration + 'm';
-                
-                // Average time
-                const avgDuration = Math.round(kickWindows.reduce((acc, w) => acc + w.duration, 0) / kickWindows.length);
-                document.getElementById('fetalAvgTime').textContent = avgDuration + 'm';
-                
-                // Render windows list
-                document.getElementById('kickWindowsList').innerHTML = kickWindows.slice(-5).reverse().map(window => {
-                    const startTime = new Date(window.startTime).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
-                    const endTime = new Date(window.endTime).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
-                    const badgeClass = window.duration <= 120 ? 'badge-success' : 'badge-warning';
-                    const badgeText = window.duration <= 120 ? 'Normal' : 'Slow';
-                    
-                    return `
-                        <div class="movement-window">
-                            <div class="window-time">${window.duration}m</div>
-                            <div class="window-detail">
-                                Kicks ${window.startKick}-${window.endKick} • ${startTime} - ${endTime}
-                            </div>
-                            <div class="window-badge ${badgeClass}">${badgeText}</div>
-                        </div>
-                    `;
-                }).join('');
-            }
-        }
-
+            return `
+                <div class="movement-window">
+                    <div class="window-time">${window.duration}m</div>
+                    <div class="window-detail">
+                        Kicks ${window.startKick}-${window.endKick} • ${startTime} - ${endTime}
+                    </div>
+                    <div class="window-badge ${badgeClass}">${badgeText}</div>
+                </div>
+            `;
+        }).join('');
+    }
+}
+function verifyCalculations() {
+    console.log('Windows found:', kickWindows.length);
+    console.log('Durations:', kickWindows.map(w => w.duration));
+    const sum = kickWindows.reduce((total, w) => total + w.duration, 0);
+    console.log('Sum:', sum);
+    console.log('Average:', sum / kickWindows.length);
+}
         function updateTimePeriodsAnalysis(todayKicks) {
             const periods = {
                 morning: 0,
