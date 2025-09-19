@@ -1205,7 +1205,23 @@ if (kickWindows.length > 0) {
                 }
             }, 60000);
         }
-
+function debugSessions() {
+    console.log('=== SESSION DEBUG ===');
+    console.log('Sessions in memory:', sessions);
+    console.log('Sessions count:', sessions.length);
+    
+    const stored = localStorage.getItem('aviSessions');
+    if (stored) {
+        const storedSessions = JSON.parse(stored);
+        console.log('Sessions in localStorage:', storedSessions);
+        console.log('Stored count:', storedSessions.length);
+    } else {
+        console.log('No sessions in localStorage');
+    }
+    
+    // Force update the display
+    updateSessionLog();
+}
         function checkUserSetup() {
             const saved = localStorage.getItem('aviTrackerUser');
             if (!saved) {
@@ -1406,53 +1422,53 @@ if (kickWindows.length > 0) {
         }
 
         function recordKick() {
-            if (!currentUser) {
-                alert('Please set up your profile first');
-                return;
-            }
-            
-            const kick = {
-                timestamp: Date.now(),
-                parent: currentUser,
-                sessionType: sessionType,
-                id: 'kick_' + Date.now()
-            };
-            
-            // Animation
-            const btn = document.querySelector('.kick-btn');
-            btn.classList.add('pulse');
-            setTimeout(() => btn.classList.remove('pulse'), 500);
-            
-            if (navigator.vibrate) {
-                navigator.vibrate([50, 30, 50]);
-            }
-            
-            // Save
-            if (kicksRef) {
-                kicksRef.push(kick);
-            } else {
-                kicks.push(kick);
-                saveLocalData();
-            }
-            
-            // Update timed session
-            if (timedSession.active) {
-                timedSession.kicks.push(kick.timestamp);
-                document.getElementById('timedKickCount').textContent = timedSession.kicks.length;
-                
-                const progress = Math.min((timedSession.kicks.length / 10) * 100, 100);
-                document.getElementById('sessionProgressBar').style.width = progress + '%';
-                
-                if (timedSession.kicks.length === 10) {
-                    const duration = Date.now() - timedSession.startTime;
-                    showAlert('success', '🎉 Goal Reached!', `10 kicks in ${Math.floor(duration/60000)} minutes!`);
-                }
-            }
-            
-            updateKickStats();
-            updateFetalAnalytics();
-            renderKickLog();
+    if (!currentUser) {
+        alert('Please set up your profile first');
+        return;
+    }
+    
+    const kick = {
+        timestamp: Date.now(),
+        parent: currentUser,
+        sessionType: sessionType,
+        id: 'kick_' + Date.now()
+    };
+    
+    // Animation
+    const btn = document.querySelector('.kick-btn');
+    btn.classList.add('pulse');
+    setTimeout(() => btn.classList.remove('pulse'), 500);
+    
+    if (navigator.vibrate) {
+        navigator.vibrate([50, 30, 50]);
+    }
+    
+    // Save kick
+    if (kicksRef) {
+        kicksRef.push(kick);
+    } else {
+        kicks.push(kick);
+        saveLocalData();
+    }
+    
+    // IMPORTANT: Track kicks in timed session
+    if (timedSession.active) {
+        timedSession.kicks.push(kick.timestamp);
+        document.getElementById('timedKickCount').textContent = timedSession.kicks.length;
+        
+        const progress = Math.min((timedSession.kicks.length / 10) * 100, 100);
+        document.getElementById('sessionProgressBar').style.width = progress + '%';
+        
+        if (timedSession.kicks.length === 10) {
+            const duration = Date.now() - timedSession.startTime;
+            showAlert('success', '🎉 Goal Reached!', `10 kicks in ${Math.floor(duration/60000)} minutes!`);
         }
+    }
+    
+    updateKickStats();
+    updateFetalAnalytics();
+    renderKickLog();
+}
 
         function renderKickLog() {
             const logEl = document.getElementById('kickLog');
