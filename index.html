@@ -1194,6 +1194,14 @@
             setInterval(() => {
                 if (currentMode === 'pregnancy') {
                     updateFetalAnalytics();
+                    // Debug: Log the calculation right after it happens
+console.log('After calculateKickWindows:');
+console.log('Avg Time shown:', document.getElementById('fetalAvgTime').textContent);
+console.log('Windows:', kickWindows.length);
+if (kickWindows.length > 0) {
+    const debugSum = kickWindows.reduce((sum, w) => sum + w.duration, 0);
+    console.log('Should be:', Math.round(debugSum / kickWindows.length) + 'm');
+}
                 }
             }, 60000);
         }
