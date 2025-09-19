@@ -1096,7 +1096,9 @@
             </div>
         </div>
     </div>
-
+<button class="btn" onclick="recoverSessions()" style="width: 100%; margin-top: 10px; background: var(--info); color: white;">
+    🔄 Recover Lost Sessions
+</button>
     <!-- Bottom Navigation -->
     <div class="bottom-nav pregnancy-nav">
         <div class="nav-item active" onclick="switchTab('home')">
@@ -2458,6 +2460,33 @@ function verifyCalculations() {
 
         // Initialize on load
         window.addEventListener('load', init);
+        
+        function recoverSessions() {
+    if (sessionsRef) {
+        sessionsRef.once('value', (snapshot) => {
+            const data = snapshot.val();
+            if (data) {
+                let recovered = 0;
+                Object.keys(data).forEach(key => {
+                    const session = data[key];
+                    if ((session.status === 'completed' || session.duration) && 
+                        !sessions.find(s => s.startTime === session.startTime)) {
+                        sessions.push(session);
+                        recovered++;
+                    }
+                });
+                sessions.sort((a, b) => (a.startTime || 0) - (b.startTime || 0));
+                updateSessionLog();
+                saveLocalData();
+                showAlert('success', '🔄 Recovery Complete', `Recovered ${recovered} session(s) from cloud`);
+            } else {
+                showAlert('info', '🔄 No Sessions Found', 'No sessions to recover');
+            }
+        });
+    } else {
+        showAlert('warning', '⚠️ Offline Mode', 'Cannot recover - Firebase not connected');
+    }
+}
     </script>
 </body>
 </html>
