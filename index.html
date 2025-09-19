@@ -1606,7 +1606,7 @@ if (kickWindows.length > 0) {
             updateWeeklyStats();
         }
 
-        function calculateKickWindows(todayKicks) {
+       function calculateKickWindows(todayKicks) {
     kickWindows = [];
     
     if (todayKicks.length < 10) {
@@ -1633,7 +1633,7 @@ if (kickWindows.length > 0) {
         });
     }
     
-    // Update stats with CORRECT calculation
+    // Update stats
     document.getElementById('fetalActiveWindows').textContent = kickWindows.length;
     
     if (kickWindows.length > 0) {
@@ -1641,10 +1641,16 @@ if (kickWindows.length > 0) {
         const bestWindow = kickWindows.reduce((a, b) => a.duration < b.duration ? a : b);
         document.getElementById('fetalBestTime').textContent = bestWindow.duration + 'm';
         
-        // FIXED Average calculation - using only the windows we have
-        const totalDuration = kickWindows.reduce((sum, w) => sum + w.duration, 0);
-        const avgDuration = Math.round(totalDuration / kickWindows.length);
-        document.getElementById('fetalAvgTime').textContent = avgDuration + 'm';
+        // FIXED: Average ONLY the last 5 windows (what's visible)
+        const visibleWindows = kickWindows.slice(-5);
+        const visibleTotal = visibleWindows.reduce((sum, w) => sum + w.duration, 0);
+        const visibleAvg = Math.round(visibleTotal / visibleWindows.length);
+        document.getElementById('fetalAvgTime').textContent = visibleAvg + 'm';
+        
+        // Debug logging
+        console.log('Total windows:', kickWindows.length);
+        console.log('Visible windows (last 5):', visibleWindows.map(w => w.duration));
+        console.log('Visible average:', visibleAvg);
         
         // Render windows list (keep last 5 for display)
         document.getElementById('kickWindowsList').innerHTML = kickWindows.slice(-5).reverse().map(window => {
