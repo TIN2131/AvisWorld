@@ -1273,6 +1273,7 @@ if (kickWindows.length > 0) {
                 setTimeout(updateCharts, 100);
             } else if (tabName === 'fetal') {
                 updateFetalAnalytics();
+                updateSessionLog(); // Add this line
             }
         }
 
@@ -1332,53 +1333,61 @@ if (kickWindows.length > 0) {
         }
 
         function endTimedSession() {
-            if (!timedSession.active) return;
-            
-            clearInterval(timedSession.timer);
-            const duration = Date.now() - timedSession.startTime;
-            const kickCount = timedSession.kicks.length;
-            
-            // Save session data
-            const sessionData = {
-                startTime: timedSession.startTime,
-                endTime: Date.now(),
-                duration: Math.floor(duration / 60000), // minutes
-                kicks: kickCount,
-                success: kickCount >= 10,
-                parent: currentUser
-            };
-            
-            sessions.push(sessionData);
-            
-            if (sessionsRef && timedSession.firebaseId) {
-                sessionsRef.child(timedSession.firebaseId).update({
-                    ...sessionData,
-                    status: 'completed'
-                });
-            }
-            
-            if (kickCount >= 10) {
-                showAlert('success', '✅ Great Job!', `${kickCount} kicks in ${Math.floor(duration/60000)} minutes`);
-            } else {
-                showAlert('info', '📊 Session Ended', `Recorded ${kickCount} kicks in ${Math.floor(duration/60000)} minutes`);
-            }
-            
-            timedSession = {
-                active: false,
-                startTime: null,
-                kicks: [],
-                timer: null
-            };
-            
-            document.getElementById('timedStartBtn').disabled = false;
-            document.getElementById('timedEndBtn').disabled = true;
-            document.getElementById('timedSessionTimer').textContent = '00:00:00';
-            document.getElementById('timedKickCount').textContent = '0';
-            document.getElementById('sessionProgressBar').style.width = '0%';
-            
-            updateSessionLog();
-            saveLocalData();
-        }
+    if (!timedSession.active) return;
+    
+    clearInterval(timedSession.timer);
+    const duration = Date.now() - timedSession.startTime;
+    const kickCount = timedSession.kicks.length;
+    
+    // Save session data
+    const sessionData = {
+        startTime: timedSession.startTime,
+        endTime: Date.now(),
+        duration: Math.floor(duration / 60000), // minutes
+        kicks: kickCount,
+        success: kickCount >= 10,
+        parent: currentUser,
+        id: 'session_' + Date.now() // Add ID for local storage
+    };
+    
+    // Add to local array
+    sessions.push(sessionData);
+    
+    // Save to Firebase
+    if (sessionsRef) {
+        sessionsRef.push(sessionData).then(() => {
+            console.log('Session saved to Firebase');
+        }).catch(error => {
+            console.error('Error saving session:', error);
+        });
+    }
+    
+    // Save to local storage immediately
+    saveLocalData();
+    
+    if (kickCount >= 10) {
+        showAlert('success', '✅ Great Job!', `${kickCount} kicks in ${Math.floor(duration/60000)} minutes`);
+    } else {
+        showAlert('info', '📊 Session Ended', `Recorded ${kickCount} kicks in ${Math.floor(duration/60000)} minutes`);
+    }
+    
+    timedSession = {
+        active: false,
+        startTime: null,
+        kicks: [],
+        timer: null,
+        firebaseId: null
+    };
+    
+    document.getElementById('timedStartBtn').disabled = false;
+    document.getElementById('timedEndBtn').disabled = true;
+    document.getElementById('timedSessionTimer').textContent = '00:00:00';
+    document.getElementById('timedKickCount').textContent = '0';
+    document.getElementById('sessionProgressBar').style.width = '0%';
+    
+    // Update the log immediately
+    updateSessionLog();
+}
 
         function updateTimedSession() {
             if (!timedSession.active) return;
@@ -1478,33 +1487,36 @@ if (kickWindows.length > 0) {
         }
 
         function updateSessionLog() {
-            const logEl = document.getElementById('fetalSessionLog');
-            const recentSessions = sessions.slice(-10).reverse();
-            
-            if (recentSessions.length === 0) {
-                logEl.innerHTML = '<div style="text-align: center; padding: 20px; color: var(--text-light);">No timed sessions recorded</div>';
-                return;
-            }
-            
-            logEl.innerHTML = recentSessions.map(session => {
-                const date = new Date(session.startTime);
-                const timeStr = date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
-                const dateStr = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-                const successClass = session.success ? 'session-success' : 'session-warning';
-                const icon = session.success ? '✅' : '⚠️';
-                
-                return `
-                    <div class="session-item ${successClass}">
-                        <div style="font-size: 20px; margin-right: 12px;">${icon}</div>
-                        <div style="flex: 1;">
-                            <div style="font-weight: 600;">${session.kicks} kicks in ${session.duration} min</div>
-                            <div style="font-size: 12px; color: var(--text-light);">${dateStr} at ${timeStr}</div>
-                        </div>
-                        <button onclick="deleteSession(${sessions.indexOf(session)})" style="background: none; border: none; color: var(--text-light); cursor: pointer; padding: 5px; font-size: 18px;">✕</button>
-                    </div>
-                `;
-            }).join('');
-        }
+    const logEl = document.getElementById('fetalSessionLog');
+    
+    console.log('Updating session log, sessions:', sessions.length); // Debug
+    
+    if (sessions.length === 0) {
+        logEl.innerHTML = '<div style="text-align: center; padding: 20px; color: var(--text-light);">No timed sessions recorded</div>';
+        return;
+    }
+    
+    const recentSessions = sessions.slice(-10).reverse();
+    
+    logEl.innerHTML = recentSessions.map((session, index) => {
+        const date = new Date(session.startTime);
+        const timeStr = date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+        const dateStr = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        const successClass = session.success ? 'session-success' : 'session-warning';
+        const icon = session.success ? '✅' : '⚠️';
+        
+        return `
+            <div class="session-item ${successClass}">
+                <div style="font-size: 20px; margin-right: 12px;">${icon}</div>
+                <div style="flex: 1;">
+                    <div style="font-weight: 600;">${session.kicks} kicks in ${session.duration} min</div>
+                    <div style="font-size: 12px; color: var(--text-light);">${dateStr} at ${timeStr}</div>
+                </div>
+                <button onclick="deleteSession(${sessions.indexOf(session)})" style="background: none; border: none; color: var(--text-light); cursor: pointer; padding: 5px; font-size: 18px;">✕</button>
+            </div>
+        `;
+    }).join('');
+}
 
         function deleteSession(index) {
             if (confirm('Delete this session?')) {
@@ -2409,21 +2421,24 @@ function verifyCalculations() {
         }
 
         function loadLocalData() {
-            const savedKicks = localStorage.getItem('aviKicks');
-            if (savedKicks) kicks = JSON.parse(savedKicks);
-            
-            const savedActivities = localStorage.getItem('aviActivities');
-            if (savedActivities) activities = JSON.parse(savedActivities);
-            
-            const savedSessions = localStorage.getItem('aviSessions');
-            if (savedSessions) sessions = JSON.parse(savedSessions);
-            
-            const savedMode = localStorage.getItem('aviMode');
-            if (savedMode) {
-                currentMode = savedMode;
-                document.body.className = savedMode + '-mode';
-            }
-        }
+    const savedKicks = localStorage.getItem('aviKicks');
+    if (savedKicks) kicks = JSON.parse(savedKicks);
+    
+    const savedActivities = localStorage.getItem('aviActivities');
+    if (savedActivities) activities = JSON.parse(savedActivities);
+    
+    const savedSessions = localStorage.getItem('aviSessions');
+    if (savedSessions) {
+        sessions = JSON.parse(savedSessions);
+        console.log('Loaded sessions from storage:', sessions.length);
+    }
+    
+    const savedMode = localStorage.getItem('aviMode');
+    if (savedMode) {
+        currentMode = savedMode;
+        document.body.className = savedMode + '-mode';
+    }
+}
 
         // Initialize on load
         window.addEventListener('load', init);
