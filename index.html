@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Avi's Journey - Complete Tracker</title>
+    <title>Avi's Journey - Enhanced Tracker</title>
     <link rel="manifest" href="manifest.json">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
@@ -360,8 +360,8 @@
             box-shadow: var(--shadow-lg);
         }
 
-        /* Feeding Timer Card */
-        .feeding-timer-card {
+        /* Analytics Cards */
+        .analytics-card {
             background: var(--card-bg);
             border-radius: 20px;
             padding: 20px;
@@ -369,23 +369,82 @@
             box-shadow: var(--shadow);
         }
 
-        .feeding-timer-display {
+        .metric-grid {
             display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 15px;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+        }
+
+        .metric-card {
+            background: var(--accent);
+            padding: 15px;
+            border-radius: 12px;
+        }
+
+        .metric-label {
+            font-size: 11px;
+            color: var(--text-light);
+            text-transform: uppercase;
+            margin-bottom: 5px;
+        }
+
+        .metric-value {
+            font-size: 22px;
+            font-weight: bold;
+            color: var(--primary);
+        }
+
+        .metric-detail {
+            font-size: 10px;
+            color: var(--text-light);
+        }
+
+        /* Progress Bar */
+        .progress-container {
             margin-bottom: 20px;
         }
 
-        .feeding-side {
-            text-align: center;
-            padding: 15px;
-            background: var(--accent);
-            border-radius: 15px;
+        .progress-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
         }
 
-        .feeding-side.active {
-            background: linear-gradient(135deg, var(--feeding-color) 0%, #6bb6d6 100%);
+        .progress-bar-bg {
+            background: var(--accent);
+            height: 30px;
+            border-radius: 15px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .progress-bar-fill {
+            background: linear-gradient(135deg, var(--success), #6ba644);
+            height: 100%;
+            width: 0%;
+            transition: width 0.5s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .progress-text {
             color: white;
+            font-weight: bold;
+            font-size: 12px;
+        }
+
+        /* Strength Indicator */
+        .strength-bar {
+            height: 8px;
+            background: var(--accent);
+            border-radius: 4px;
+            transition: background 0.3s ease;
+        }
+
+        .strength-bar.active {
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
         }
 
         /* Activity Log */
@@ -428,6 +487,52 @@
 
         .log-content.active {
             display: block;
+        }
+
+        /* Session Log Items */
+        .session-item {
+            display: flex;
+            align-items: center;
+            padding: 12px;
+            margin-bottom: 8px;
+            background: var(--accent);
+            border-radius: 12px;
+        }
+
+        .session-success {
+            border-left: 4px solid var(--success);
+        }
+
+        .session-warning {
+            border-left: 4px solid var(--warning);
+        }
+
+        /* Feeding Timer Card */
+        .feeding-timer-card {
+            background: var(--card-bg);
+            border-radius: 20px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: var(--shadow);
+        }
+
+        .feeding-timer-display {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .feeding-side {
+            text-align: center;
+            padding: 15px;
+            background: var(--accent);
+            border-radius: 15px;
+        }
+
+        .feeding-side.active {
+            background: linear-gradient(135deg, var(--feeding-color) 0%, #6bb6d6 100%);
+            color: white;
         }
 
         /* Bottom Navigation */
@@ -532,6 +637,33 @@
             from { opacity: 0; transform: translateX(-20px); }
             to { opacity: 1; transform: translateX(0); }
         }
+
+        /* Alert Badge */
+        .alert-badge {
+            padding: 10px;
+            border-radius: 10px;
+            margin-top: 10px;
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        .alert-success {
+            background: rgba(139, 195, 74, 0.1);
+            color: var(--success);
+            border: 1px solid var(--success);
+        }
+
+        .alert-warning {
+            background: rgba(255, 193, 7, 0.1);
+            color: var(--warning);
+            border: 1px solid var(--warning);
+        }
+
+        .alert-info {
+            background: rgba(100, 181, 246, 0.1);
+            color: var(--info);
+            border: 1px solid var(--info);
+        }
     </style>
 </head>
 <body class="pregnancy-mode" data-theme="lavender">
@@ -633,7 +765,7 @@
                         </div>
                         <div>
                             <div style="font-size: 24px; font-weight: bold;" id="avgTime">--</div>
-                            <div style="font-size: 10px; opacity: 0.9;">AVG TIME</div>
+                            <div style="font-size: 10px; opacity: 0.9;">TO 10</div>
                         </div>
                         <div>
                             <div style="font-size: 24px; font-weight: bold;" id="lastKickTime">--:--</div>
@@ -668,6 +800,14 @@
                         <div style="font-size: 14px; color: var(--text-light); margin-bottom: 15px;">
                             Goal: 10 kicks in 2 hours
                         </div>
+                        
+                        <!-- Session Progress Bar -->
+                        <div style="margin-bottom: 15px;">
+                            <div style="background: rgba(0,0,0,0.1); height: 10px; border-radius: 5px; overflow: hidden;">
+                                <div id="sessionProgressBar" style="background: var(--success); height: 100%; width: 0%; transition: width 0.3s ease;"></div>
+                            </div>
+                        </div>
+                        
                         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
                             <button class="btn btn-primary" onclick="startTimedSession()" id="timedStartBtn">Start Session</button>
                             <button class="btn" style="background: var(--danger); color: white;" onclick="endTimedSession()" id="timedEndBtn" disabled>End Session</button>
@@ -682,8 +822,72 @@
                     </div>
                 </div>
 
+                <!-- Advanced Analytics -->
+                <div class="analytics-card">
+                    <h3 style="font-size: 18px; margin-bottom: 15px; color: var(--primary-dark);">🧠 Smart Analytics</h3>
+                    
+                    <!-- Daily Goal Progress -->
+                    <div class="progress-container">
+                        <div class="progress-header">
+                            <span style="font-weight: 600;">Daily Goal Progress</span>
+                            <span id="dailyGoalText" style="font-size: 14px; color: var(--text-light);">0/10 kicks</span>
+                        </div>
+                        <div class="progress-bar-bg">
+                            <div id="dailyGoalBar" class="progress-bar-fill">
+                                <span id="dailyGoalPercent" class="progress-text"></span>
+                            </div>
+                        </div>
+                        <div id="goalAlert" class="alert-badge" style="display: none;"></div>
+                    </div>
+                    
+                    <!-- Statistical Insights -->
+                    <div class="metric-grid">
+                        <div class="metric-card">
+                            <div class="metric-label">Peak Hour</div>
+                            <div class="metric-value" id="peakHour">--:--</div>
+                            <div class="metric-detail" id="peakHourDetail">No data yet</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-label">Avg Interval</div>
+                            <div class="metric-value" id="avgInterval">--</div>
+                            <div class="metric-detail">Between kicks</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-label">Weekly Avg</div>
+                            <div class="metric-value" id="weeklyAvg">0</div>
+                            <div class="metric-detail">Kicks per day</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-label">Pattern</div>
+                            <div class="metric-value" id="activityPattern">--</div>
+                            <div class="metric-detail" id="patternDetail">Analyzing...</div>
+                        </div>
+                    </div>
+                    
+                    <!-- Movement Strength Indicator -->
+                    <div style="margin-top: 20px;">
+                        <div style="font-weight: 600; margin-bottom: 10px;">Movement Strength Today</div>
+                        <div style="display: flex; gap: 5px;">
+                            <div class="strength-bar" id="strength1" style="flex: 1;"></div>
+                            <div class="strength-bar" id="strength2" style="flex: 1;"></div>
+                            <div class="strength-bar" id="strength3" style="flex: 1;"></div>
+                            <div class="strength-bar" id="strength4" style="flex: 1;"></div>
+                            <div class="strength-bar" id="strength5" style="flex: 1;"></div>
+                        </div>
+                        <div style="text-align: center; margin-top: 5px; font-size: 12px; color: var(--text-light);" id="strengthLabel">Low Activity</div>
+                    </div>
+                </div>
+                
+                <!-- Session History -->
+                <div class="analytics-card">
+                    <h3 style="font-size: 18px; margin-bottom: 15px; color: var(--primary-dark);">⏱️ Timed Sessions Log</h3>
+                    <div id="sessionLog" style="max-height: 200px; overflow-y: auto;">
+                        <div style="text-align: center; padding: 20px; color: var(--text-light);">No timed sessions recorded</div>
+                    </div>
+                </div>
+
                 <!-- Recent Kicks Log -->
-                <div style="background: var(--card-bg); border-radius: 20px; padding: 20px; margin-top: 20px; box-shadow: var(--shadow);">
+                <div class="analytics-card">
                     <h3 style="font-size: 18px; margin-bottom: 15px; color: var(--primary-dark);">📊 Recent Kicks</h3>
                     <div id="kickLog" style="max-height: 300px; overflow-y: auto;">
                         <div style="text-align: center; padding: 20px; color: var(--text-light);">No kicks recorded today</div>
@@ -765,7 +969,7 @@
 
         <!-- ANALYTICS TAB -->
         <div id="analyticsTab" class="tab-content">
-            <div style="background: var(--card-bg); border-radius: 20px; padding: 20px; box-shadow: var(--shadow);">
+            <div class="analytics-card">
                 <h3 style="font-size: 18px; margin-bottom: 15px; color: var(--primary-dark);">📊 Detailed Analytics</h3>
                 
                 <!-- Period Selector -->
@@ -817,9 +1021,11 @@
         let database = null;
         let kicksRef = null;
         let activitiesRef = null;
+        let sessionsRef = null;
         let currentUser = null;
         let kicks = [];
         let activities = [];
+        let sessions = [];
         let currentMode = 'pregnancy';
         let currentTab = 'home';
         let currentLogTab = 'feeding';
@@ -846,6 +1052,7 @@
             database = firebase.database();
             kicksRef = database.ref('kicks');
             activitiesRef = database.ref('activities');
+            sessionsRef = database.ref('sessions');
             setupFirebaseListeners();
         }
 
@@ -857,9 +1064,13 @@
             loadTheme();
             loadLocalData();
             updateAllStats();
+            updateAdvancedAnalytics();
             
             // Update timers
             setInterval(updateTimers, 1000);
+            
+            // Update analytics every minute
+            setInterval(updateAdvancedAnalytics, 60000);
         }
 
         function checkUserSetup() {
@@ -967,6 +1178,16 @@
             document.getElementById('timedStartBtn').disabled = true;
             document.getElementById('timedEndBtn').disabled = false;
             
+            // Save session start
+            if (sessionsRef) {
+                const sessionData = {
+                    startTime: timedSession.startTime,
+                    parent: currentUser,
+                    status: 'active'
+                };
+                timedSession.firebaseId = sessionsRef.push(sessionData).key;
+            }
+            
             setTimeout(() => {
                 if (timedSession.active && timedSession.kicks.length < 10) {
                     showAlert('warning', '⚠️ 2 Hour Alert', 'Session time elapsed. Consider contacting your healthcare provider if less than 10 kicks.');
@@ -982,8 +1203,29 @@
             const duration = Date.now() - timedSession.startTime;
             const kickCount = timedSession.kicks.length;
             
+            // Save session data
+            const sessionData = {
+                startTime: timedSession.startTime,
+                endTime: Date.now(),
+                duration: Math.floor(duration / 60000), // minutes
+                kicks: kickCount,
+                success: kickCount >= 10,
+                parent: currentUser
+            };
+            
+            sessions.push(sessionData);
+            
+            if (sessionsRef && timedSession.firebaseId) {
+                sessionsRef.child(timedSession.firebaseId).update({
+                    ...sessionData,
+                    status: 'completed'
+                });
+            }
+            
             if (kickCount >= 10) {
                 showAlert('success', '✅ Great Job!', `${kickCount} kicks in ${Math.floor(duration/60000)} minutes`);
+            } else {
+                showAlert('info', '📊 Session Ended', `Recorded ${kickCount} kicks in ${Math.floor(duration/60000)} minutes`);
             }
             
             timedSession = {
@@ -997,6 +1239,10 @@
             document.getElementById('timedEndBtn').disabled = true;
             document.getElementById('timedSessionTimer').textContent = '00:00:00';
             document.getElementById('timedKickCount').textContent = '0';
+            document.getElementById('sessionProgressBar').style.width = '0%';
+            
+            updateSessionLog();
+            saveLocalData();
         }
 
         function updateTimedSession() {
@@ -1009,6 +1255,10 @@
             
             document.getElementById('timedSessionTimer').textContent = 
                 `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+            
+            // Update progress bar
+            const progress = Math.min((timedSession.kicks.length / 10) * 100, 100);
+            document.getElementById('sessionProgressBar').style.width = progress + '%';
         }
 
         function recordKick() {
@@ -1046,6 +1296,9 @@
                 timedSession.kicks.push(kick.timestamp);
                 document.getElementById('timedKickCount').textContent = timedSession.kicks.length;
                 
+                const progress = Math.min((timedSession.kicks.length / 10) * 100, 100);
+                document.getElementById('sessionProgressBar').style.width = progress + '%';
+                
                 if (timedSession.kicks.length === 10) {
                     const duration = Date.now() - timedSession.startTime;
                     showAlert('success', '🎉 Goal Reached!', `10 kicks in ${Math.floor(duration/60000)} minutes!`);
@@ -1053,6 +1306,7 @@
             }
             
             updateKickStats();
+            updateAdvancedAnalytics();
             renderKickLog();
         }
 
@@ -1088,6 +1342,34 @@
             }).join('');
         }
 
+        function updateSessionLog() {
+            const logEl = document.getElementById('sessionLog');
+            const recentSessions = sessions.slice(-5).reverse();
+            
+            if (recentSessions.length === 0) {
+                logEl.innerHTML = '<div style="text-align: center; padding: 20px; color: var(--text-light);">No timed sessions recorded</div>';
+                return;
+            }
+            
+            logEl.innerHTML = recentSessions.map(session => {
+                const date = new Date(session.startTime);
+                const timeStr = date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+                const dateStr = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                const successClass = session.success ? 'session-success' : 'session-warning';
+                const icon = session.success ? '✅' : '⚠️';
+                
+                return `
+                    <div class="session-item ${successClass}">
+                        <div style="font-size: 20px; margin-right: 12px;">${icon}</div>
+                        <div style="flex: 1;">
+                            <div style="font-weight: 600;">${session.kicks} kicks in ${session.duration} min</div>
+                            <div style="font-size: 12px; color: var(--text-light);">${dateStr} at ${timeStr}</div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
         function deleteKick(kickId) {
             if (confirm('Delete this kick?')) {
                 if (kicksRef && kickId && kickId.startsWith('-')) {
@@ -1096,6 +1378,7 @@
                 
                 kicks = kicks.filter(k => k.firebaseId !== kickId && k.id !== kickId);
                 updateKickStats();
+                updateAdvancedAnalytics();
                 renderKickLog();
                 saveLocalData();
             }
@@ -1117,8 +1400,155 @@
                     lastKick.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
             }
             
-            // Average time calculation
-            // ... (calculation logic for average time to 10 kicks)
+            // Average time to reach 10 kicks
+            calculateAverageTimeTo10();
+        }
+
+        function calculateAverageTimeTo10() {
+            const today = new Date().toDateString();
+            const todayKicks = kicks
+                .filter(k => new Date(k.timestamp).toDateString() === today)
+                .sort((a, b) => a.timestamp - b.timestamp);
+            
+            if (todayKicks.length >= 10) {
+                const timeTo10 = todayKicks[9].timestamp - todayKicks[0].timestamp;
+                const minutes = Math.floor(timeTo10 / 60000);
+                document.getElementById('avgTime').textContent = minutes + 'm';
+            } else {
+                document.getElementById('avgTime').textContent = '--';
+            }
+        }
+
+        function updateAdvancedAnalytics() {
+            const today = new Date().toDateString();
+            const todayKicks = kicks.filter(k => 
+                new Date(k.timestamp).toDateString() === today
+            );
+            
+            // Daily Goal Progress
+            const goalProgress = Math.min((todayKicks.length / 10) * 100, 100);
+            document.getElementById('dailyGoalBar').style.width = goalProgress + '%';
+            document.getElementById('dailyGoalText').textContent = `${todayKicks.length}/10 kicks`;
+            document.getElementById('dailyGoalPercent').textContent = goalProgress > 0 ? Math.round(goalProgress) + '%' : '';
+            
+            // Goal Alert
+            const goalAlertEl = document.getElementById('goalAlert');
+            if (todayKicks.length >= 10) {
+                goalAlertEl.className = 'alert-badge alert-success';
+                goalAlertEl.textContent = '🎉 Daily goal achieved!';
+                goalAlertEl.style.display = 'block';
+            } else if (todayKicks.length >= 5) {
+                goalAlertEl.className = 'alert-badge alert-info';
+                goalAlertEl.textContent = '👍 Halfway to daily goal';
+                goalAlertEl.style.display = 'block';
+            } else {
+                goalAlertEl.style.display = 'none';
+            }
+            
+            // Peak Hour Analysis
+            const hourCounts = {};
+            kicks.forEach(k => {
+                const hour = new Date(k.timestamp).getHours();
+                hourCounts[hour] = (hourCounts[hour] || 0) + 1;
+            });
+            
+            if (Object.keys(hourCounts).length > 0) {
+                const peakHour = Object.keys(hourCounts).reduce((a, b) => 
+                    hourCounts[a] > hourCounts[b] ? a : b);
+                const hour12 = peakHour % 12 || 12;
+                const ampm = peakHour < 12 ? 'AM' : 'PM';
+                document.getElementById('peakHour').textContent = `${hour12}:00`;
+                document.getElementById('peakHourDetail').textContent = `${ampm} • ${hourCounts[peakHour]} kicks`;
+            } else {
+                document.getElementById('peakHour').textContent = '--:--';
+                document.getElementById('peakHourDetail').textContent = 'No data yet';
+            }
+            
+            // Average Interval
+            if (todayKicks.length > 1) {
+                const sortedKicks = todayKicks.sort((a, b) => a.timestamp - b.timestamp);
+                let totalInterval = 0;
+                for (let i = 1; i < sortedKicks.length; i++) {
+                    totalInterval += sortedKicks[i].timestamp - sortedKicks[i-1].timestamp;
+                }
+                const avgInterval = totalInterval / (sortedKicks.length - 1);
+                const minutes = Math.round(avgInterval / 60000);
+                document.getElementById('avgInterval').textContent = minutes + ' min';
+            } else {
+                document.getElementById('avgInterval').textContent = '--';
+            }
+            
+            // Weekly Average
+            const weekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
+            const weekKicks = kicks.filter(k => k.timestamp > weekAgo);
+            const dailyAvg = Math.round(weekKicks.length / 7);
+            document.getElementById('weeklyAvg').textContent = dailyAvg;
+            
+            // Activity Pattern
+            updateActivityPattern(todayKicks.length);
+            
+            // Movement Strength
+            updateMovementStrength(todayKicks.length);
+        }
+
+        function updateActivityPattern(todayCount) {
+            const weekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
+            const weekKicks = kicks.filter(k => k.timestamp > weekAgo);
+            const dailyAvg = weekKicks.length / 7;
+            
+            let pattern = '';
+            let detail = '';
+            
+            if (todayCount > dailyAvg * 1.2) {
+                pattern = '📈';
+                detail = 'Above average';
+            } else if (todayCount < dailyAvg * 0.8) {
+                pattern = '📉';
+                detail = 'Below average';
+            } else {
+                pattern = '➡️';
+                detail = 'Normal activity';
+            }
+            
+            document.getElementById('activityPattern').textContent = pattern;
+            document.getElementById('patternDetail').textContent = detail;
+        }
+
+        function updateMovementStrength(count) {
+            const bars = 5;
+            let activeCount = 0;
+            let label = '';
+            
+            if (count >= 20) {
+                activeCount = 5;
+                label = 'Very High Activity';
+            } else if (count >= 15) {
+                activeCount = 4;
+                label = 'High Activity';
+            } else if (count >= 10) {
+                activeCount = 3;
+                label = 'Normal Activity';
+            } else if (count >= 5) {
+                activeCount = 2;
+                label = 'Low Activity';
+            } else if (count > 0) {
+                activeCount = 1;
+                label = 'Very Low Activity';
+            } else {
+                activeCount = 0;
+                label = 'No Activity Yet';
+            }
+            
+            for (let i = 1; i <= bars; i++) {
+                const bar = document.getElementById(`strength${i}`);
+                if (i <= activeCount) {
+                    bar.classList.add('active');
+                } else {
+                    bar.classList.remove('active');
+                }
+            }
+            
+            document.getElementById('strengthLabel').textContent = label;
         }
 
         // ==========================================
@@ -1492,6 +1922,7 @@
                     });
                     kicks.sort((a, b) => a.timestamp - b.timestamp);
                     updateKickStats();
+                    updateAdvancedAnalytics();
                     renderKickLog();
                 }
             });
@@ -1508,6 +1939,21 @@
                     activities.sort((a, b) => a.timestamp - b.timestamp);
                     updateBabyStats();
                     refreshBabyLogs();
+                }
+            });
+            
+            sessionsRef.once('value', (snapshot) => {
+                const data = snapshot.val();
+                if (data) {
+                    sessions = [];
+                    Object.keys(data).forEach(key => {
+                        const session = data[key];
+                        if (session.status === 'completed') {
+                            sessions.push(session);
+                        }
+                    });
+                    sessions.sort((a, b) => a.startTime - b.startTime);
+                    updateSessionLog();
                 }
             });
             
@@ -1529,6 +1975,7 @@
                     }
                     
                     updateKickStats();
+                    updateAdvancedAnalytics();
                     renderKickLog();
                 }
             });
@@ -1545,10 +1992,19 @@
                 }
             });
             
+            sessionsRef.on('child_added', (snapshot) => {
+                const session = snapshot.val();
+                if (session.status === 'completed' && !sessions.find(s => s.startTime === session.startTime)) {
+                    sessions.push(session);
+                    updateSessionLog();
+                }
+            });
+            
             // Listen for removals
             kicksRef.on('child_removed', (snapshot) => {
                 kicks = kicks.filter(k => k.firebaseId !== snapshot.key);
                 updateKickStats();
+                updateAdvancedAnalytics();
                 renderKickLog();
             });
             
@@ -1586,7 +2042,9 @@
         function updateAllStats() {
             if (currentMode === 'pregnancy') {
                 updateKickStats();
+                updateAdvancedAnalytics();
                 renderKickLog();
+                updateSessionLog();
             } else {
                 updateBabyStats();
                 refreshBabyLogs();
@@ -1671,6 +2129,19 @@
             
             if (currentMode === 'pregnancy') {
                 doc.text(`Total Kicks Today: ${document.getElementById('todayKicks').textContent}`, 20, 55);
+                doc.text(`Daily Goal: ${document.getElementById('dailyGoalText').textContent}`, 20, 65);
+                doc.text(`Peak Activity: ${document.getElementById('peakHour').textContent}`, 20, 75);
+                doc.text(`Weekly Average: ${document.getElementById('weeklyAvg').textContent} kicks/day`, 20, 85);
+                
+                // Add session history
+                if (sessions.length > 0) {
+                    doc.text('Recent Sessions:', 20, 100);
+                    sessions.slice(-5).forEach((session, index) => {
+                        const y = 110 + (index * 10);
+                        const date = new Date(session.startTime).toLocaleDateString();
+                        doc.text(`${date}: ${session.kicks} kicks in ${session.duration} min`, 30, y);
+                    });
+                }
             } else {
                 doc.text(`Feedings: ${document.getElementById('todayFeedings').textContent}`, 20, 55);
                 doc.text(`Wet Diapers: ${document.getElementById('todayPees').textContent}`, 20, 65);
@@ -1683,6 +2154,7 @@
         function saveLocalData() {
             localStorage.setItem('aviKicks', JSON.stringify(kicks.slice(-500)));
             localStorage.setItem('aviActivities', JSON.stringify(activities.slice(-500)));
+            localStorage.setItem('aviSessions', JSON.stringify(sessions.slice(-50)));
         }
 
         function loadLocalData() {
@@ -1691,6 +2163,9 @@
             
             const savedActivities = localStorage.getItem('aviActivities');
             if (savedActivities) activities = JSON.parse(savedActivities);
+            
+            const savedSessions = localStorage.getItem('aviSessions');
+            if (savedSessions) sessions = JSON.parse(savedSessions);
             
             const savedMode = localStorage.getItem('aviMode');
             if (savedMode) {
