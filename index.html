@@ -1067,41 +1067,73 @@
 <!-- NEW: Movement Quality Score -->
             <div class="analytics-card">
                 <h3 style="font-size: 18px; margin-bottom: 15px; color: var(--primary-dark);">🎯 Movement Quality Score</h3>
-                <div class="quality-score-container">
-                    <div class="quality-score">
-                        <div class="score-circle" style="--score: 0;">
-                            <div class="score-inner">
-                                <div class="score-value" id="qualityScore">--</div>
-                                <div class="score-label">Quality</div>
+                <div class="quality-score-container" style="background: linear-gradient(135deg, rgba(255,255,255,0.1), rgba(155,123,184,0.05)); padding: 25px; border-radius: 20px;">
+                    <div class="quality-score" style="text-align: center; margin-bottom: 25px;">
+                        <div class="score-circle" style="--score: 0; width: 140px; height: 140px; margin: 0 auto; position: relative;">
+                            <svg style="position: absolute; width: 100%; height: 100%; transform: rotate(-90deg);">
+                                <circle cx="70" cy="70" r="60" stroke="rgba(255,255,255,0.1)" stroke-width="12" fill="none"></circle>
+                                <circle id="scoreProgress" cx="70" cy="70" r="60" stroke="url(#scoreGradient)" stroke-width="12" fill="none" stroke-dasharray="377" stroke-dashoffset="377" stroke-linecap="round" style="transition: stroke-dashoffset 1s ease;"></circle>
+                                <defs>
+                                    <linearGradient id="scoreGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                                        <stop offset="0%" style="stop-color:var(--success);stop-opacity:1" />
+                                        <stop offset="50%" style="stop-color:var(--primary);stop-opacity:1" />
+                                        <stop offset="100%" style="stop-color:var(--primary-dark);stop-opacity:1" />
+                                    </linearGradient>
+                                </defs>
+                            </svg>
+                            <div class="score-inner" style="position: absolute; inset: 20px; border-radius: 50%; background: var(--glass-bg); backdrop-filter: blur(10px); display: flex; flex-direction: column; align-items: center; justify-content: center; box-shadow: inset 0 2px 10px rgba(0,0,0,0.1);">
+                                <div class="score-value" id="qualityScore" style="font-size: 36px; font-weight: bold; background: linear-gradient(135deg, var(--primary), var(--primary-dark)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">--</div>
+                                <div class="score-label" style="font-size: 11px; color: var(--text-light); text-transform: uppercase; letter-spacing: 1px;">Quality</div>
                             </div>
                         </div>
+                        <div id="qualityMessage" style="text-align: center; margin-top: 15px; font-size: 14px; color: var(--text-light); font-style: italic;"></div>
                     </div>
-                    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; text-align: center;">
-                        <div>
-                            <div style="font-size: 11px; color: var(--text-light);">Consistency</div>
-                            <div style="font-size: 18px; font-weight: bold; color: var(--primary);" id="consistencyScore">--</div>
+                    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px;">
+                        <div style="text-align: center; padding: 15px; background: rgba(255,255,255,0.05); border-radius: 15px; border: 1px solid rgba(255,255,255,0.1);">
+                            <div style="font-size: 10px; color: var(--text-light); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px;">Consistency</div>
+                            <div style="font-size: 24px; font-weight: bold; color: var(--primary);" id="consistencyScore">--</div>
+                            <div style="width: 100%; height: 4px; background: rgba(255,255,255,0.1); border-radius: 2px; margin-top: 8px; overflow: hidden;">
+                                <div id="consistencyBar" style="height: 100%; background: linear-gradient(90deg, var(--primary-light), var(--primary)); width: 0%; transition: width 0.5s ease;"></div>
+                            </div>
                         </div>
-                        <div>
-                            <div style="font-size: 11px; color: var(--text-light);">Strength</div>
-                            <div style="font-size: 18px; font-weight: bold; color: var(--primary);" id="strengthScore">--</div>
+                        <div style="text-align: center; padding: 15px; background: rgba(255,255,255,0.05); border-radius: 15px; border: 1px solid rgba(255,255,255,0.1);">
+                            <div style="font-size: 10px; color: var(--text-light); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px;">Strength</div>
+                            <div style="font-size: 24px; font-weight: bold; color: var(--primary);" id="strengthScore">--</div>
+                            <div style="width: 100%; height: 4px; background: rgba(255,255,255,0.1); border-radius: 2px; margin-top: 8px; overflow: hidden;">
+                                <div id="strengthBar" style="height: 100%; background: linear-gradient(90deg, var(--primary-light), var(--primary)); width: 0%; transition: width 0.5s ease;"></div>
+                            </div>
                         </div>
-                        <div>
-                            <div style="font-size: 11px; color: var(--text-light);">Timing</div>
-                            <div style="font-size: 18px; font-weight: bold; color: var(--primary);" id="timingScore">--</div>
+                        <div style="text-align: center; padding: 15px; background: rgba(255,255,255,0.05); border-radius: 15px; border: 1px solid rgba(255,255,255,0.1);">
+                            <div style="font-size: 10px; color: var(--text-light); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px;">Timing</div>
+                            <div style="font-size: 24px; font-weight: bold; color: var(--primary);" id="timingScore">--</div>
+                            <div style="width: 100%; height: 4px; background: rgba(255,255,255,0.1); border-radius: 2px; margin-top: 8px; overflow: hidden;">
+                                <div id="timingBar" style="height: 100%; background: linear-gradient(90deg, var(--primary-light), var(--primary)); width: 0%; transition: width 0.5s ease;"></div>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
 
+            
             <!-- NEW: Predictive Insights -->
             <div class="analytics-card">
                 <h3 style="font-size: 18px; margin-bottom: 15px; color: var(--primary-dark);">🔮 Predictive Insights</h3>
-                <div class="insights-container">
+                <div class="insights-container" style="background: linear-gradient(135deg, rgba(100,181,246,0.08), rgba(155,123,184,0.08)); padding: 20px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.15);">
+                    <div id="insightAccuracy" style="text-align: center; margin-bottom: 15px; padding: 10px; background: rgba(255,255,255,0.05); border-radius: 10px;">
+                        <span style="font-size: 11px; color: var(--text-light); text-transform: uppercase;">Prediction Accuracy</span>
+                        <span id="accuracyLevel" style="margin-left: 10px; padding: 3px 10px; background: rgba(139,195,74,0.2); color: var(--success); border-radius: 10px; font-size: 11px; font-weight: bold;">Learning...</span>
+                    </div>
                     <div id="insightsList">
-                        <div style="text-align: center; padding: 20px; color: var(--text-light);">Gathering data for insights...</div>
+                        <div style="text-align: center; padding: 20px; color: var(--text-light);">
+                            <div style="font-size: 32px; margin-bottom: 10px;">📊</div>
+                            <div>Recording movement patterns...</div>
+                            <div style="font-size: 11px; margin-top: 5px; opacity: 0.8;">Predictions improve with more data</div>
+                        </div>
                     </div>
                 </div>
             </div>
+
+            
             <!-- Detailed Metrics -->
             <div class="analytics-card">
                 <h3 style="font-size: 18px; margin-bottom: 15px; color: var(--primary-dark);">🧠 Advanced Analytics</h3>
@@ -2594,9 +2626,7 @@ function verifyCalculations() {
                 document.getElementById('consistencyScore').textContent = '--';
                 document.getElementById('strengthScore').textContent = '--';
                 document.getElementById('timingScore').textContent = '--';
-                if (document.querySelector('.score-circle')) {
-                    document.querySelector('.score-circle').style.setProperty('--score', 0);
-                }
+                document.getElementById('qualityMessage').textContent = 'Need at least 5 kicks for scoring';
                 return;
             }
             
@@ -2623,14 +2653,33 @@ function verifyCalculations() {
             
             const qualityScore = Math.round((consistencyScore + strengthScore + timingScore) / 3);
             
+            // Update displays
             document.getElementById('qualityScore').textContent = qualityScore;
             document.getElementById('consistencyScore').textContent = Math.round(consistencyScore);
             document.getElementById('strengthScore').textContent = strengthScore;
             document.getElementById('timingScore').textContent = Math.round(timingScore);
             
-            if (document.querySelector('.score-circle')) {
-                document.querySelector('.score-circle').style.setProperty('--score', qualityScore);
+            // Update progress bars
+            document.getElementById('consistencyBar').style.width = consistencyScore + '%';
+            document.getElementById('strengthBar').style.width = strengthScore + '%';
+            document.getElementById('timingBar').style.width = timingScore + '%';
+            
+            // Update circular progress
+            const circle = document.getElementById('scoreProgress');
+            if (circle) {
+                const circumference = 377; // 2 * π * 60
+                const offset = circumference - (qualityScore / 100 * circumference);
+                circle.style.strokeDashoffset = offset;
             }
+            
+            // Update message
+            let message = '';
+            if (qualityScore >= 80) message = '🌟 Excellent movement patterns!';
+            else if (qualityScore >= 60) message = '✨ Good activity level';
+            else if (qualityScore >= 40) message = '📊 Normal movement range';
+            else message = '💡 Monitor movement patterns';
+            
+            document.getElementById('qualityMessage').textContent = message;
         }
 
         function generatePredictiveInsights() {
@@ -2639,6 +2688,29 @@ function verifyCalculations() {
             const todayKicks = kicks.filter(k => 
                 new Date(k.timestamp).toDateString() === today
             );
+            
+            // Calculate accuracy based on data amount
+            const totalDataPoints = kicks.length;
+            let accuracyText = 'Learning...';
+            let accuracyColor = 'var(--warning)';
+            
+            if (totalDataPoints > 100) {
+                accuracyText = 'High Confidence';
+                accuracyColor = 'var(--success)';
+            } else if (totalDataPoints > 50) {
+                accuracyText = 'Good Confidence';
+                accuracyColor = 'var(--info)';
+            } else if (totalDataPoints > 20) {
+                accuracyText = 'Building Patterns';
+                accuracyColor = 'var(--warning)';
+            }
+            
+            const accuracyEl = document.getElementById('accuracyLevel');
+            if (accuracyEl) {
+                accuracyEl.textContent = accuracyText;
+                accuracyEl.style.backgroundColor = accuracyColor.replace(')', ', 0.2)').replace('rgb', 'rgba');
+                accuracyEl.style.color = accuracyColor;
+            }
             
             if (todayKicks.length > 0) {
                 const currentHour = new Date().getHours();
@@ -2649,41 +2721,66 @@ function verifyCalculations() {
                 if (kicksLastHour > 3) {
                     insights.push({
                         icon: '⚡',
-                        text: 'Baby is very active right now! This is a great time to do a kick count session.'
+                        text: 'Baby is very active right now! This is a great time to do a kick count session.',
+                        confidence: 'high'
                     });
                 }
                 
+                // Pattern-based predictions
                 const hourCounts = {};
                 kicks.forEach(k => {
                     const hour = new Date(k.timestamp).getHours();
                     hourCounts[hour] = (hourCounts[hour] || 0) + 1;
                 });
                 
-                if (hourCounts[currentHour + 1] > 5) {
+                // Predict next active hour
+                const nextHour = (currentHour + 1) % 24;
+                if (hourCounts[nextHour] && hourCounts[nextHour] > 5) {
                     insights.push({
                         icon: '🕐',
-                        text: `Based on patterns, baby typically becomes active around ${(currentHour + 1) % 12 || 12}:00.`
+                        text: `Based on ${totalDataPoints} data points, baby typically becomes active around ${nextHour % 12 || 12}:00 ${nextHour >= 12 ? 'PM' : 'AM'}.`,
+                        confidence: totalDataPoints > 50 ? 'high' : 'medium'
                     });
                 }
                 
+                // Goal tracking
                 if (todayKicks.length >= 8 && todayKicks.length < 10) {
                     insights.push({
                         icon: '🎯',
-                        text: `Almost at daily goal! Just ${10 - todayKicks.length} more kicks needed.`
+                        text: `Almost at daily goal! Just ${10 - todayKicks.length} more kicks needed.`,
+                        confidence: 'high'
                     });
                 }
+                
+                // Pattern insights
+                if (kickWindows.length >= 3) {
+                    const avgTime = kickWindows.reduce((sum, w) => sum + w.duration, 0) / kickWindows.length;
+                    if (avgTime < 90) {
+                        insights.push({
+                            icon: '💪',
+                            text: 'Movement patterns are strong and consistent today!',
+                            confidence: 'high'
+                        });
+                    }
+                }
+            } else {
+                insights.push({
+                    icon: '💤',
+                    text: 'No movements recorded yet. Try having a snack or cold drink to encourage activity.',
+                    confidence: 'suggestion'
+                });
             }
             
             const insightsEl = document.getElementById('insightsList');
             if (insightsEl && insights.length > 0) {
-                insightsEl.innerHTML = insights.map(insight => `
-                    <div class="insight-item">
-                        <div class="insight-icon">${insight.icon}</div>
-                        <div class="insight-text">${insight.text}</div>
+                insightsEl.innerHTML = insights.map((insight, index) => `
+                    <div class="insight-item" style="display: flex; align-items: center; padding: 14px; background: rgba(255,255,255,0.05); border-radius: 12px; margin-bottom: 10px; animation: slideIn 0.3s ease ${index * 0.1}s both; border-left: 3px solid ${insight.confidence === 'high' ? 'var(--success)' : insight.confidence === 'medium' ? 'var(--info)' : 'var(--warning)'};">
+                        <div class="insight-icon" style="font-size: 24px; margin-right: 12px;">${insight.icon}</div>
+                        <div class="insight-text" style="flex: 1; font-size: 13px; line-height: 1.5; color: var(--text);">${insight.text}</div>
                     </div>
                 `).join('');
             }
-        }     
+        }
         function recoverSessions() {
     if (sessionsRef) {
         sessionsRef.once('value', (snapshot) => {
