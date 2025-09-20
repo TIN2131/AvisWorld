@@ -29,7 +29,7 @@
             -webkit-tap-highlight-color: transparent;
         }
 
-        /* Color Themes */
+        /* Color Themes with Glassmorphism Variables */
         :root, [data-theme="lavender"] {
             --primary: #9b7bb8;
             --primary-light: #c8b6db;
@@ -53,6 +53,13 @@
             --feeding-color: #87ceeb;
             --diaper-pee: #ffe8a1;
             --diaper-poop: #d4a373;
+            
+            /* Glassmorphism Variables */
+            --glass-bg: rgba(255, 255, 255, 0.7);
+            --glass-border: rgba(255, 255, 255, 0.3);
+            --glass-shadow: 0 8px 32px 0 rgba(155, 123, 184, 0.15);
+            --blur-amount: 10px;
+            --glass-overlay: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%);
         }
 
         [data-theme="rose"] {
@@ -65,6 +72,9 @@
             --text: #4a4a4a;
             --text-light: #8a8a8a;
             --pregnancy-color: #ffb3d9;
+            --glass-bg: rgba(255, 255, 255, 0.7);
+            --glass-border: rgba(233, 30, 99, 0.2);
+            --glass-shadow: 0 8px 32px 0 rgba(233, 30, 99, 0.15);
         }
 
         [data-theme="ocean"] {
@@ -77,6 +87,9 @@
             --text: #4a4a4a;
             --text-light: #8a8a8a;
             --pregnancy-color: #80deea;
+            --glass-bg: rgba(255, 255, 255, 0.7);
+            --glass-border: rgba(0, 172, 193, 0.2);
+            --glass-shadow: 0 8px 32px 0 rgba(0, 172, 193, 0.15);
         }
 
         [data-theme="sunset"] {
@@ -89,6 +102,9 @@
             --text: #4a4a4a;
             --text-light: #8a8a8a;
             --pregnancy-color: #ffb3b3;
+            --glass-bg: rgba(255, 255, 255, 0.7);
+            --glass-border: rgba(255, 107, 107, 0.2);
+            --glass-shadow: 0 8px 32px 0 rgba(255, 107, 107, 0.15);
         }
 
         [data-theme="forest"] {
@@ -101,6 +117,9 @@
             --text: #4a4a4a;
             --text-light: #8a8a8a;
             --pregnancy-color: #a5d6a7;
+            --glass-bg: rgba(255, 255, 255, 0.7);
+            --glass-border: rgba(102, 187, 106, 0.2);
+            --glass-shadow: 0 8px 32px 0 rgba(102, 187, 106, 0.15);
         }
 
         [data-theme="dark"] {
@@ -115,6 +134,46 @@
             --pregnancy-color: #ce93d8;
             --shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
             --shadow-lg: 0 10px 25px rgba(0, 0, 0, 0.5);
+            --glass-bg: rgba(30, 30, 30, 0.7);
+            --glass-border: rgba(187, 134, 252, 0.2);
+            --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5);
+            --blur-amount: 15px;
+        }
+
+        /* Animated background shapes */
+        body::before,
+        body::after {
+            content: '';
+            position: fixed;
+            border-radius: 50%;
+            filter: blur(100px);
+            opacity: 0.4;
+            animation: float 20s infinite ease-in-out;
+            pointer-events: none;
+        }
+
+        body::before {
+            width: 400px;
+            height: 400px;
+            background: radial-gradient(circle, var(--primary-light), transparent);
+            top: -100px;
+            right: -100px;
+        }
+
+        body::after {
+            width: 300px;
+            height: 300px;
+            background: radial-gradient(circle, var(--pink), transparent);
+            bottom: -50px;
+            left: -50px;
+            animation-delay: 10s;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            25% { transform: translate(-30px, 30px) scale(1.1); }
+            50% { transform: translate(30px, -30px) scale(0.9); }
+            75% { transform: translate(-20px, -20px) scale(1.05); }
         }
 
         body {
@@ -265,11 +324,16 @@
 
         /* Kick Session Card */
         .kick-session-card {
-            background: var(--card-bg);
+            background: var(--glass-bg);
+            backdrop-filter: blur(var(--blur-amount));
+            -webkit-backdrop-filter: blur(var(--blur-amount));
             border-radius: 25px;
             padding: 25px;
-            box-shadow: var(--shadow-lg);
+            box-shadow: var(--glass-shadow);
+            border: 1px solid var(--glass-border);
             margin-bottom: 20px;
+            position: relative;
+            overflow: hidden;
         }
 
         .session-type-selector {
@@ -362,11 +426,16 @@
 
         /* Analytics Cards */
         .analytics-card {
-            background: var(--card-bg);
-            border-radius: 20px;
-            padding: 20px;
+            background: var(--glass-bg);
+            backdrop-filter: blur(var(--blur-amount));
+            -webkit-backdrop-filter: blur(var(--blur-amount));
+            border-radius: 25px;
+            padding: 25px;
             margin-bottom: 20px;
-            box-shadow: var(--shadow);
+            box-shadow: var(--glass-shadow);
+            border: 1px solid var(--glass-border);
+            position: relative;
+            overflow: hidden;
         }
 
         .metric-grid {
@@ -497,11 +566,16 @@
 
         /* Feeding Timer Card */
         .feeding-timer-card {
-            background: var(--card-bg);
-            border-radius: 20px;
-            padding: 20px;
+            background: var(--glass-bg);
+            backdrop-filter: blur(var(--blur-amount));
+            -webkit-backdrop-filter: blur(var(--blur-amount));
+            border-radius: 25px;
+            padding: 25px;
             margin-bottom: 20px;
-            box-shadow: var(--shadow);
+            box-shadow: var(--glass-shadow);
+            border: 1px solid var(--glass-border);
+            position: relative;
+            overflow: hidden;
         }
 
         .feeding-timer-display {
@@ -644,11 +718,16 @@
 
         /* Activity Log */
         .activity-log {
-            background: var(--card-bg);
-            border-radius: 20px;
-            padding: 20px;
-            box-shadow: var(--shadow);
+            background: var(--glass-bg);
+            backdrop-filter: blur(var(--blur-amount));
+            -webkit-backdrop-filter: blur(var(--blur-amount));
+            border-radius: 25px;
+            padding: 25px;
+            box-shadow: var(--glass-shadow);
+            border: 1px solid var(--glass-border);
             margin-top: 20px;
+            position: relative;
+            overflow: hidden;
         }
 
         .log-tabs {
@@ -985,7 +1064,44 @@
                     <div style="text-align: center; padding: 20px; color: var(--text-light);">No complete windows today</div>
                 </div>
             </div>
+<!-- NEW: Movement Quality Score -->
+            <div class="analytics-card">
+                <h3 style="font-size: 18px; margin-bottom: 15px; color: var(--primary-dark);">🎯 Movement Quality Score</h3>
+                <div class="quality-score-container">
+                    <div class="quality-score">
+                        <div class="score-circle" style="--score: 0;">
+                            <div class="score-inner">
+                                <div class="score-value" id="qualityScore">--</div>
+                                <div class="score-label">Quality</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; text-align: center;">
+                        <div>
+                            <div style="font-size: 11px; color: var(--text-light);">Consistency</div>
+                            <div style="font-size: 18px; font-weight: bold; color: var(--primary);" id="consistencyScore">--</div>
+                        </div>
+                        <div>
+                            <div style="font-size: 11px; color: var(--text-light);">Strength</div>
+                            <div style="font-size: 18px; font-weight: bold; color: var(--primary);" id="strengthScore">--</div>
+                        </div>
+                        <div>
+                            <div style="font-size: 11px; color: var(--text-light);">Timing</div>
+                            <div style="font-size: 18px; font-weight: bold; color: var(--primary);" id="timingScore">--</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
 
+            <!-- NEW: Predictive Insights -->
+            <div class="analytics-card">
+                <h3 style="font-size: 18px; margin-bottom: 15px; color: var(--primary-dark);">🔮 Predictive Insights</h3>
+                <div class="insights-container">
+                    <div id="insightsList">
+                        <div style="text-align: center; padding: 20px; color: var(--text-light);">Gathering data for insights...</div>
+                    </div>
+                </div>
+            </div>
             <!-- Detailed Metrics -->
             <div class="analytics-card">
                 <h3 style="font-size: 18px; margin-bottom: 15px; color: var(--primary-dark);">🧠 Advanced Analytics</h3>
@@ -1188,6 +1304,8 @@
             loadTheme();
             loadLocalData();
             updateAllStats();
+            updateMovementQualityScore();
+            generatePredictiveInsights();
             
             // Update timers
             setInterval(updateTimers, 1000);
@@ -1431,6 +1549,7 @@ function debugSessions() {
     
     const kick = {
         timestamp: Date.now(),
+        intensity: Math.random(), // Simulated intensity for demo
         parent: currentUser,
         sessionType: sessionType,
         id: 'kick_' + Date.now()
@@ -1634,6 +1753,9 @@ function debugSessions() {
             
             // Weekly stats
             updateWeeklyStats();
+
+            updateMovementQualityScore();
+            generatePredictiveInsights();
         }
 
        function calculateKickWindows(todayKicks) {
@@ -2461,6 +2583,107 @@ function verifyCalculations() {
         // Initialize on load
         window.addEventListener('load', init);
         
+   function updateMovementQualityScore() {
+            const today = new Date().toDateString();
+            const todayKicks = kicks.filter(k => 
+                new Date(k.timestamp).toDateString() === today
+            );
+            
+            if (todayKicks.length < 5) {
+                document.getElementById('qualityScore').textContent = '--';
+                document.getElementById('consistencyScore').textContent = '--';
+                document.getElementById('strengthScore').textContent = '--';
+                document.getElementById('timingScore').textContent = '--';
+                if (document.querySelector('.score-circle')) {
+                    document.querySelector('.score-circle').style.setProperty('--score', 0);
+                }
+                return;
+            }
+            
+            let consistencyScore = 100;
+            if (todayKicks.length > 1) {
+                const intervals = [];
+                for (let i = 1; i < todayKicks.length; i++) {
+                    intervals.push(todayKicks[i].timestamp - todayKicks[i-1].timestamp);
+                }
+                const avgInterval = intervals.reduce((a, b) => a + b, 0) / intervals.length;
+                const variance = intervals.reduce((sum, int) => sum + Math.pow(int - avgInterval, 2), 0) / intervals.length;
+                const stdDev = Math.sqrt(variance);
+                consistencyScore = Math.max(0, Math.min(100, 100 - (stdDev / avgInterval * 50)));
+            }
+            
+            const avgIntensity = todayKicks.reduce((sum, k) => sum + (k.intensity || 0.5), 0) / todayKicks.length;
+            const strengthScore = Math.round(avgIntensity * 100);
+            
+            let timingScore = 0;
+            if (kickWindows.length > 0) {
+                const avgWindowTime = kickWindows.reduce((sum, w) => sum + w.duration, 0) / kickWindows.length;
+                timingScore = Math.max(0, Math.min(100, 100 - ((avgWindowTime - 60) / 60 * 50)));
+            }
+            
+            const qualityScore = Math.round((consistencyScore + strengthScore + timingScore) / 3);
+            
+            document.getElementById('qualityScore').textContent = qualityScore;
+            document.getElementById('consistencyScore').textContent = Math.round(consistencyScore);
+            document.getElementById('strengthScore').textContent = strengthScore;
+            document.getElementById('timingScore').textContent = Math.round(timingScore);
+            
+            if (document.querySelector('.score-circle')) {
+                document.querySelector('.score-circle').style.setProperty('--score', qualityScore);
+            }
+        }
+
+        function generatePredictiveInsights() {
+            const insights = [];
+            const today = new Date().toDateString();
+            const todayKicks = kicks.filter(k => 
+                new Date(k.timestamp).toDateString() === today
+            );
+            
+            if (todayKicks.length > 0) {
+                const currentHour = new Date().getHours();
+                const kicksLastHour = todayKicks.filter(k => 
+                    new Date(k.timestamp).getHours() === currentHour
+                ).length;
+                
+                if (kicksLastHour > 3) {
+                    insights.push({
+                        icon: '⚡',
+                        text: 'Baby is very active right now! This is a great time to do a kick count session.'
+                    });
+                }
+                
+                const hourCounts = {};
+                kicks.forEach(k => {
+                    const hour = new Date(k.timestamp).getHours();
+                    hourCounts[hour] = (hourCounts[hour] || 0) + 1;
+                });
+                
+                if (hourCounts[currentHour + 1] > 5) {
+                    insights.push({
+                        icon: '🕐',
+                        text: `Based on patterns, baby typically becomes active around ${(currentHour + 1) % 12 || 12}:00.`
+                    });
+                }
+                
+                if (todayKicks.length >= 8 && todayKicks.length < 10) {
+                    insights.push({
+                        icon: '🎯',
+                        text: `Almost at daily goal! Just ${10 - todayKicks.length} more kicks needed.`
+                    });
+                }
+            }
+            
+            const insightsEl = document.getElementById('insightsList');
+            if (insightsEl && insights.length > 0) {
+                insightsEl.innerHTML = insights.map(insight => `
+                    <div class="insight-item">
+                        <div class="insight-icon">${insight.icon}</div>
+                        <div class="insight-text">${insight.text}</div>
+                    </div>
+                `).join('');
+            }
+        }     
         function recoverSessions() {
     if (sessionsRef) {
         sessionsRef.once('value', (snapshot) => {
