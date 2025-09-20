@@ -834,7 +834,13 @@
                 <div id="currentUser" style="padding: 10px; background: var(--accent); border-radius: 10px; margin-bottom: 10px;"></div>
                 <button class="btn btn-primary" onclick="resetUser()" style="width: 100%;">Change User</button>
             </div>
-            
+            <div style="margin-bottom: 25px;">
+                <h3 style="font-size: 16px; margin-bottom: 10px;">📅 Pregnancy Details</h3>
+                <div style="padding: 15px; background: rgba(255,255,255,0.1); backdrop-filter: blur(5px); border-radius: 10px;">
+                    <label style="font-size: 13px; color: var(--text-light); display: block; margin-bottom: 8px;">Due Date:</label>
+                    <input type="date" id="dueDateInput" style="width: 100%; padding: 8px; border: 1px solid rgba(255,255,255,0.2); background: rgba(255,255,255,0.1); border-radius: 8px; color: var(--text);" onchange="saveDueDate()">
+                </div>
+            </div>
             <button class="btn" onclick="closeSettings()" style="width: 100%; background: var(--accent); color: var(--text);">Close</button>
         </div>
     </div>
@@ -857,6 +863,9 @@
             <div style="font-size: 32px; margin-bottom: 8px;" id="modeIcon">🤰</div>
             <h1>Avi's Journey</h1>
             <div class="subtitle">Smart Pregnancy & Baby Tracker</div>
+            <div id="weekTracker" style="margin-top: 10px; padding: 8px 16px; background: rgba(255,255,255,0.2); border-radius: 20px; display: inline-block;">
+                <span style="font-size: 14px; font-weight: 600;" id="gestationalAge">Week -- Day -</span>
+            </div>
             <div class="mode-switcher">
                 <button class="mode-btn active" id="pregnancyBtn" onclick="switchMode('pregnancy')">
                     <span>🤰</span>
@@ -872,6 +881,19 @@
         <!-- HOME TAB -->
         <div id="homeTab" class="tab-content active">
             <!-- Smart Alerts -->
+            
+            <!-- Medical Disclaimer -->
+            <div id="medicalDisclaimer" style="background: linear-gradient(135deg, rgba(255,193,7,0.1), rgba(255,152,0,0.1)); padding: 12px; border-radius: 12px; margin-bottom: 15px; border-left: 4px solid var(--warning); display: flex; align-items: center; gap: 10px;">
+                <div style="font-size: 20px;">⚠️</div>
+                <div style="flex: 1;">
+                    <div style="font-size: 12px; line-height: 1.4; color: var(--text);">
+                        <strong>Medical Notice:</strong> Count 10 movements within 2 hours once daily. Contact your healthcare provider immediately if you notice decreased movement or any concerns.
+                    </div>
+                </div>
+                <button onclick="dismissDisclaimer()" style="background: none; border: none; color: var(--text-light); cursor: pointer; padding: 5px;">✕</button>
+            </div>
+
+            
             <div id="smartAlerts"></div>
 
             <!-- PREGNANCY MODE -->
@@ -927,6 +949,12 @@
                                 <div id="sessionProgressBar" style="background: var(--success); height: 100%; width: 0%; transition: width 0.3s ease;"></div>
                             </div>
                         </div>
+
+                        <!-- Session Notes -->
+                        <div style="margin-bottom: 15px;">
+                            <input type="text" id="sessionNotes" placeholder="Add notes (e.g., after eating, baby very active)" 
+                                   style="width: 100%; padding: 10px; border: 1px solid rgba(255,255,255,0.2); background: rgba(255,255,255,0.1); border-radius: 10px; color: var(--text); font-size: 13px;">
+                        </div>
                         
                         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
                             <button class="btn btn-primary" onclick="startTimedSession()" id="timedStartBtn">Start Session</button>
@@ -934,13 +962,39 @@
                         </div>
                     </div>
 
-                    <!-- Big Kick Button -->
-                    <button class="kick-btn" onclick="recordKick()">👣</button>
-                    
-                    <div style="text-align: center; font-size: 14px; color: var(--text-light);">
-                        Tap when you feel movement
+                    <!-- Big Kick Button with Gesture Detection -->
+                    <div style="text-align: center; position: relative;">
+                        <div id="intensityIndicator" style="position: absolute; top: -30px; left: 50%; transform: translateX(-50%); padding: 5px 15px; background: rgba(255,255,255,0.9); border-radius: 20px; font-size: 12px; opacity: 0; transition: opacity 0.3s ease; pointer-events: none;">
+                            <span id="intensityText">Medium</span>
+                        </div>
+                        
+                        <button class="kick-btn" id="mainKickBtn" onmousedown="startKickPress()" onmouseup="endKickPress()" ontouchstart="startKickPress()" ontouchend="endKickPress()">👣</button>
+                        
+                        <!-- Intensity Ring Visual -->
+                        <div id="intensityRing" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 190px; height: 190px; border-radius: 50%; border: 3px solid transparent; pointer-events: none; transition: all 0.3s ease;"></div>
+                        
+                        <div style="font-size: 14px; color: var(--text-light); margin-top: 10px;">
+                            Tap for normal • Hold for strong • Swipe for light
+                        </div>
+                        
+                        <!-- Visual Feedback Guide -->
+                        <div style="margin-top: 15px; padding: 10px; background: rgba(255,255,255,0.05); border-radius: 10px;">
+                            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; font-size: 11px; color: var(--text-light);">
+                                <div>
+                                    <div>🟢 Light</div>
+                                    <div style="opacity: 0.7;">Quick tap/Swipe</div>
+                                </div>
+                                <div>
+                                    <div>🟡 Medium</div>
+                                    <div style="opacity: 0.7;">Normal tap</div>
+                                </div>
+                                <div>
+                                    <div>🔴 Strong</div>
+                                    <div style="opacity: 0.7;">Hold 1s+</div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                </div>
 
                 <!-- Recent Kicks Log (Simplified) -->
                 <div class="analytics-card">
@@ -1341,6 +1395,20 @@
             loadTheme();
             loadLocalData();
             updateAllStats();
+            updateGestationalAge();
+            
+            // Check if we need to set due date
+            if (!localStorage.getItem('aviDueDate')) {
+                setTimeout(() => {
+                    const dueDate = prompt('Welcome! Please enter your due date (YYYY-MM-DD):');
+                    if (dueDate) {
+                        localStorage.setItem('aviDueDate', dueDate);
+                        updateGestationalAge();
+                    }
+                }, 1000);
+            }
+
+            
             updateMovementQualityScore();
             generatePredictiveInsights();
             
@@ -1578,55 +1646,187 @@ function debugSessions() {
             document.getElementById('sessionProgressBar').style.width = progress + '%';
         }
 
-        function recordKick() {
-    if (!currentUser) {
-        alert('Please set up your profile first');
-        return;
-    }
-    
-    const kick = {
-        timestamp: Date.now(),
-        intensity: Math.random(), // Simulated intensity for demo
-        parent: currentUser,
-        sessionType: sessionType,
-        id: 'kick_' + Date.now()
-    };
-    
-    // Animation
-    const btn = document.querySelector('.kick-btn');
-    btn.classList.add('pulse');
-    setTimeout(() => btn.classList.remove('pulse'), 500);
-    
-    if (navigator.vibrate) {
-        navigator.vibrate([50, 30, 50]);
-    }
-    
-    // Save kick
-    if (kicksRef) {
-        kicksRef.push(kick);
-    } else {
-        kicks.push(kick);
-        saveLocalData();
-    }
-    
-    // IMPORTANT: Track kicks in timed session
-    if (timedSession.active) {
-        timedSession.kicks.push(kick.timestamp);
-        document.getElementById('timedKickCount').textContent = timedSession.kicks.length;
-        
-        const progress = Math.min((timedSession.kicks.length / 10) * 100, 100);
-        document.getElementById('sessionProgressBar').style.width = progress + '%';
-        
-        if (timedSession.kicks.length === 10) {
-            const duration = Date.now() - timedSession.startTime;
-            showAlert('success', '🎉 Goal Reached!', `10 kicks in ${Math.floor(duration/60000)} minutes!`);
+       let kickPressStart = 0;
+        let kickPressTimer = null;
+        let currentIntensity = 0.5;
+        let swipeStart = null;
+
+        function startKickPress() {
+            kickPressStart = Date.now();
+            currentIntensity = 0.5; // Start with medium
+            
+            // Show intensity indicator
+            document.getElementById('intensityIndicator').style.opacity = '1';
+            document.getElementById('intensityText').textContent = 'Medium';
+            document.getElementById('intensityRing').style.borderColor = 'rgba(255, 193, 7, 0.5)';
+            
+            // Start monitoring for long press
+            kickPressTimer = setTimeout(() => {
+                currentIntensity = 0.9; // Strong after 1 second
+                document.getElementById('intensityText').textContent = 'Strong!';
+                document.getElementById('intensityRing').style.borderColor = 'rgba(244, 67, 54, 0.7)';
+                document.getElementById('intensityRing').style.transform = 'translate(-50%, -50%) scale(1.1)';
+                
+                if (navigator.vibrate) {
+                    navigator.vibrate(100); // Feedback for strong
+                }
+            }, 1000);
+            
+            // Add visual press effect
+            document.getElementById('mainKickBtn').style.transform = 'scale(0.95)';
         }
-    }
-    
-    updateKickStats();
-    updateFetalAnalytics();
-    renderKickLog();
-}
+
+        function endKickPress() {
+            if (kickPressTimer) {
+                clearTimeout(kickPressTimer);
+            }
+            
+            const pressDuration = Date.now() - kickPressStart;
+            
+            // Determine intensity based on press duration
+            if (pressDuration < 200) {
+                currentIntensity = 0.3; // Light for very quick tap
+                document.getElementById('intensityText').textContent = 'Light';
+            } else if (pressDuration < 1000) {
+                currentIntensity = 0.5; // Medium for normal tap
+                document.getElementById('intensityText').textContent = 'Medium';
+            } else {
+                currentIntensity = 0.9; // Strong for hold
+                document.getElementById('intensityText').textContent = 'Strong!';
+            }
+            
+            // Record with detected intensity
+            recordKickWithIntensity(currentIntensity);
+            
+            // Hide indicator after a moment
+            setTimeout(() => {
+                document.getElementById('intensityIndicator').style.opacity = '0';
+                document.getElementById('intensityRing').style.borderColor = 'transparent';
+                document.getElementById('intensityRing').style.transform = 'translate(-50%, -50%) scale(1)';
+            }, 500);
+            
+            // Reset button scale
+            document.getElementById('mainKickBtn').style.transform = 'scale(1)';
+            
+            kickPressStart = 0;
+        }
+
+        // Add swipe detection for light movements
+        function initSwipeDetection() {
+            const kickBtn = document.getElementById('mainKickBtn');
+            
+            kickBtn.addEventListener('touchstart', (e) => {
+                swipeStart = {
+                    x: e.touches[0].clientX,
+                    y: e.touches[0].clientY,
+                    time: Date.now()
+                };
+            });
+            
+            kickBtn.addEventListener('touchmove', (e) => {
+                if (!swipeStart) return;
+                
+                const deltaX = Math.abs(e.touches[0].clientX - swipeStart.x);
+                const deltaY = Math.abs(e.touches[0].clientY - swipeStart.y);
+                const deltaTime = Date.now() - swipeStart.time;
+                
+                // Detect swipe (quick movement)
+                if ((deltaX > 30 || deltaY > 30) && deltaTime < 300) {
+                    e.preventDefault();
+                    clearTimeout(kickPressTimer);
+                    
+                    // Record as light movement
+                    recordKickWithIntensity(0.3);
+                    
+                    // Show feedback
+                    document.getElementById('intensityText').textContent = 'Light (Swipe)';
+                    document.getElementById('intensityRing').style.borderColor = 'rgba(139, 195, 74, 0.5)';
+                    
+                    setTimeout(() => {
+                        document.getElementById('intensityIndicator').style.opacity = '0';
+                        document.getElementById('intensityRing').style.borderColor = 'transparent';
+                    }, 500);
+                    
+                    swipeStart = null;
+                }
+            });
+        }
+
+        function recordKick() {
+            recordKickWithIntensity(0.5); // Default medium if called directly
+        }
+
+        function recordKickWithIntensity(intensityValue) {
+            if (!currentUser) {
+                alert('Please set up your profile first');
+                return;
+            }
+            
+            const kick = {
+                timestamp: Date.now(),
+                parent: currentUser,
+                sessionType: sessionType,
+                id: 'kick_' + Date.now(),
+                intensity: intensityValue
+            };
+            
+            // Animation based on intensity
+            const btn = document.querySelector('.kick-btn');
+            btn.classList.add('pulse');
+            
+            // Color flash based on intensity
+            if (intensityValue < 0.4) {
+                btn.style.boxShadow = '0 0 30px rgba(139, 195, 74, 0.6)';
+            } else if (intensityValue < 0.7) {
+                btn.style.boxShadow = '0 0 30px rgba(255, 193, 7, 0.6)';
+            } else {
+                btn.style.boxShadow = '0 0 30px rgba(244, 67, 54, 0.6)';
+            }
+            
+            setTimeout(() => {
+                btn.classList.remove('pulse');
+                btn.style.boxShadow = '0 10px 40px rgba(155, 123, 184, 0.3)';
+            }, 500);
+            
+            // Haptic feedback
+            if (navigator.vibrate) {
+                if (intensityValue > 0.7) {
+                    navigator.vibrate([100, 50, 100]); // Strong pattern
+                } else if (intensityValue > 0.4) {
+                    navigator.vibrate([50, 30, 50]); // Medium pattern
+                } else {
+                    navigator.vibrate(30); // Light tap
+                }
+            }
+            
+            // Save kick
+            if (kicksRef) {
+                kicksRef.push(kick);
+            } else {
+                kicks.push(kick);
+                saveLocalData();
+            }
+            
+            // Track kicks in timed session
+            if (timedSession.active) {
+                timedSession.kicks.push(kick.timestamp);
+                document.getElementById('timedKickCount').textContent = timedSession.kicks.length;
+                
+                const progress = Math.min((timedSession.kicks.length / 10) * 100, 100);
+                document.getElementById('sessionProgressBar').style.width = progress + '%';
+                
+                if (timedSession.kicks.length === 10) {
+                    const duration = Date.now() - timedSession.startTime;
+                    showAlert('success', '🎉 Goal Reached!', `10 kicks in ${Math.floor(duration/60000)} minutes!`);
+                }
+            }
+            
+            updateKickStats();
+            updateFetalAnalytics();
+            updateMovementQualityScore();
+            updateIntensityAnalysis();
+            renderKickLog();
+        }
 
         function renderKickLog() {
             const logEl = document.getElementById('kickLog');
@@ -1651,7 +1851,9 @@ function debugSessions() {
                     <div style="display: flex; align-items: center; padding: 12px; margin-bottom: 8px; background: var(--accent); border-radius: 12px;">
                         <div style="font-size: 20px; margin-right: 12px;">👣</div>
                         <div style="flex: 1;">
-                            <div style="font-weight: 600;">Kick recorded ${badge}</div>
+                            <div style="font-weight: 600;">
+                                ${kick.intensity < 0.4 ? '🟢 Light' : kick.intensity < 0.7 ? '🟡 Medium' : '🔴 Strong'} movement ${badge}
+                            </div>
                             <div style="font-size: 12px; color: var(--text-light);">${time}</div>
                         </div>
                         <button onclick="deleteKick('${kick.firebaseId || kick.id}')" style="background: none; border: none; color: var(--text-light); cursor: pointer; padding: 5px; font-size: 18px; transition: color 0.3s ease;">✕</button>
@@ -2618,7 +2820,10 @@ function verifyCalculations() {
 }
 
         // Initialize on load
-        window.addEventListener('load', init);
+        window.addEventListener('load', () => {
+            init();
+            setTimeout(initSwipeDetection, 500); // Initialize swipe detection after load
+        });
         
    function updateMovementQualityScore() {
             const today = new Date().toDateString();
@@ -2785,6 +2990,78 @@ function verifyCalculations() {
                     </div>
                 `).join('');
             }
+        }
+        function updateGestationalAge() {
+            const dueDate = localStorage.getItem('aviDueDate');
+            if (!dueDate) {
+                document.getElementById('gestationalAge').textContent = 'Set due date in settings';
+                return;
+            }
+            
+            const due = new Date(dueDate);
+            const today = new Date();
+            const daysUntilDue = Math.floor((due - today) / (1000 * 60 * 60 * 24));
+            const weeksPassed = 40 - Math.floor(daysUntilDue / 7);
+            const daysPassed = 7 - (daysUntilDue % 7);
+            
+            if (weeksPassed > 0 && weeksPassed <= 42) {
+                document.getElementById('gestationalAge').textContent = `Week ${weeksPassed} Day ${daysPassed}`;
+                
+                // Add size comparison
+                const sizeComparisons = {
+                    20: '🥕 Carrot',
+                    24: '🌽 Corn',
+                    28: '🍆 Eggplant',
+                    32: '🥬 Cabbage',
+                    36: '🍈 Honeydew',
+                    40: '🍉 Watermelon'
+                };
+                
+                const sizeKey = Object.keys(sizeComparisons).reverse().find(week => weeksPassed >= week);
+                if (sizeKey) {
+                    document.getElementById('gestationalAge').textContent += ` • ${sizeComparisons[sizeKey]}`;
+                }
+            }
+        }
+
+        function dismissDisclaimer() {
+            document.getElementById('medicalDisclaimer').style.display = 'none';
+            localStorage.setItem('disclaimerDismissed', Date.now());
+        }
+
+        function saveDueDate() {
+            const dueDate = document.getElementById('dueDateInput').value;
+            if (dueDate) {
+                localStorage.setItem('aviDueDate', dueDate);
+                updateGestationalAge();
+                showAlert('success', '✅ Due Date Saved', 'Your pregnancy timeline has been updated');
+            }
+        }
+
+        function updateIntensityAnalysis() {
+            const today = new Date().toDateString();
+            const todayKicks = kicks.filter(k => 
+                new Date(k.timestamp).toDateString() === today
+            );
+            
+            if (todayKicks.length === 0) {
+                if (document.getElementById('lightKicks')) document.getElementById('lightKicks').textContent = '0';
+                if (document.getElementById('moderateKicks')) document.getElementById('moderateKicks').textContent = '0';
+                if (document.getElementById('strongKicks')) document.getElementById('strongKicks').textContent = '0';
+                return;
+            }
+            
+            let light = 0, moderate = 0, strong = 0;
+            todayKicks.forEach(kick => {
+                const intensity = kick.intensity || 0.5;
+                if (intensity < 0.4) light++;
+                else if (intensity < 0.7) moderate++;
+                else strong++;
+            });
+            
+            if (document.getElementById('lightKicks')) document.getElementById('lightKicks').textContent = light;
+            if (document.getElementById('moderateKicks')) document.getElementById('moderateKicks').textContent = moderate;
+            if (document.getElementById('strongKicks')) document.getElementById('strongKicks').textContent = strong;
         }
         function recoverSessions() {
     if (sessionsRef) {
