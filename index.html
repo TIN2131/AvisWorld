@@ -1252,6 +1252,9 @@
 <button class="btn" onclick="recoverSessions()" style="width: 100%; margin-top: 10px; background: var(--info); color: white;">
     🔄 Recover Lost Sessions
 </button>
+    <button class="btn" onclick="debugSessions()" style="width: 100%; margin-top: 10px; background: var(--primary); color: white;">
+        🔍 Check Session Logs
+    </button>
     <!-- Bottom Navigation -->
     <div class="bottom-nav pregnancy-nav">
         <div class="nav-item active" onclick="switchTab('home')">
@@ -1506,61 +1509,77 @@ function debugSessions() {
         }
 
         function endTimedSession() {
-    if (!timedSession.active) return;
-    
-    clearInterval(timedSession.timer);
-    const duration = Date.now() - timedSession.startTime;
-    const kickCount = timedSession.kicks.length;
-    
-    // Save session data
-    const sessionData = {
-        startTime: timedSession.startTime,
-        endTime: Date.now(),
-        duration: Math.floor(duration / 60000), // minutes
-        kicks: kickCount,
-        success: kickCount >= 10,
-        parent: currentUser,
-        id: 'session_' + Date.now() // Add ID for local storage
-    };
-    
-    // Add to local array
-    sessions.push(sessionData);
-    
-    // Save to Firebase
-    if (sessionsRef) {
-        sessionsRef.push(sessionData).then(() => {
-            console.log('Session saved to Firebase');
-        }).catch(error => {
-            console.error('Error saving session:', error);
-        });
-    }
-    
-    // Save to local storage immediately
-    saveLocalData();
-    
-    if (kickCount >= 10) {
-        showAlert('success', '✅ Great Job!', `${kickCount} kicks in ${Math.floor(duration/60000)} minutes`);
-    } else {
-        showAlert('info', '📊 Session Ended', `Recorded ${kickCount} kicks in ${Math.floor(duration/60000)} minutes`);
-    }
-    
-    timedSession = {
-        active: false,
-        startTime: null,
-        kicks: [],
-        timer: null,
-        firebaseId: null
-    };
-    
-    document.getElementById('timedStartBtn').disabled = false;
-    document.getElementById('timedEndBtn').disabled = true;
-    document.getElementById('timedSessionTimer').textContent = '00:00:00';
-    document.getElementById('timedKickCount').textContent = '0';
-    document.getElementById('sessionProgressBar').style.width = '0%';
-    
-    // Update the log immediately
-    updateSessionLog();
-}
+            if (!timedSession.active) return;
+            
+            clearInterval(timedSession.timer);
+            const duration = Date.now() - timedSession.startTime;
+            const kickCount = timedSession.kicks.length;
+            
+            // Get notes if any
+            const notes = document.getElementById('sessionNotes') ? document.getElementById('sessionNotes').value : '';
+            
+            // Save session data with proper structure
+            const sessionData = {
+                startTime: timedSession.startTime,
+                endTime: Date.now(),
+                duration: Math.floor(duration / 60000), // minutes
+                kicks: kickCount,
+                success: kickCount >= 10,
+                parent: currentUser,
+                id: 'session_' + Date.now(),
+                notes: notes,
+                status: 'completed'
+            };
+            
+            // Add to local array FIRST
+            sessions.push(sessionData);
+            
+            // Save to Firebase with better error handling
+            if (sessionsRef) {
+                sessionsRef.push(sessionData)
+                    .then(() => {
+                        console.log('Session saved to Firebase successfully');
+                    })
+                    .catch(error => {
+                        console.error('Firebase save error:', error);
+                        // Still save locally even if Firebase fails
+                        saveLocalData();
+                    });
+            }
+            
+            // ALWAYS save to local storage immediately
+            saveLocalData();
+            
+            // Force update the session log
+            updateSessionLog();
+            
+            if (kickCount >= 10) {
+                showAlert('success', '✅ Great Job!', `${kickCount} kicks in ${Math.floor(duration/60000)} minutes!`);
+            } else {
+                showAlert('info', '📊 Session Ended', `Recorded ${kickCount} kicks in ${Math.floor(duration/60000)} minutes`);
+            }
+            
+            // Reset timed session
+            timedSession = {
+                active: false,
+                startTime: null,
+                kicks: [],
+                timer: null,
+                firebaseId: null
+            };
+            
+            // Clear notes field
+            if (document.getElementById('sessionNotes')) {
+                document.getElementById('sessionNotes').value = '';
+            }
+            
+            // Reset UI
+            document.getElementById('timedStartBtn').disabled = false;
+            document.getElementById('timedEndBtn').disabled = true;
+            document.getElementById('timedSessionTimer').textContent = '00:00:00';
+            document.getElementById('timedKickCount').textContent = '0';
+            document.getElementById('sessionProgressBar').style.width = '0%';
+        }
 
         function updateTimedSession() {
             if (!timedSession.active) return;
@@ -2598,25 +2617,47 @@ function verifyCalculations() {
         }
 
         function loadLocalData() {
-    const savedKicks = localStorage.getItem('aviKicks');
-    if (savedKicks) kicks = JSON.parse(savedKicks);
-    
-    const savedActivities = localStorage.getItem('aviActivities');
-    if (savedActivities) activities = JSON.parse(savedActivities);
-    
-    const savedSessions = localStorage.getItem('aviSessions');
-    if (savedSessions) {
-        sessions = JSON.parse(savedSessions);
-        console.log('Loaded sessions from storage:', sessions.length);
-    }
-    
-    const savedMode = localStorage.getItem('aviMode');
-    if (savedMode) {
-        currentMode = savedMode;
-        document.body.className = savedMode + '-mode';
-    }
-}
-
+            const savedKicks = localStorage.getItem('aviKicks');
+            if (savedKicks) {
+                try {
+                    kicks = JSON.parse(savedKicks);
+                } catch (e) {
+                    console.error('Error loading kicks:', e);
+                    kicks = [];
+                }
+            }
+            
+            const savedActivities = localStorage.getItem('aviActivities');
+            if (savedActivities) {
+                try {
+                    activities = JSON.parse(savedActivities);
+                } catch (e) {
+                    console.error('Error loading activities:', e);
+                    activities = [];
+                }
+            }
+            
+            const savedSessions = localStorage.getItem('aviSessions');
+            if (savedSessions) {
+                try {
+                    sessions = JSON.parse(savedSessions);
+                    console.log('Loaded sessions from storage:', sessions.length);
+                    // Update the session log immediately after loading
+                    if (sessions.length > 0) {
+                        setTimeout(updateSessionLog, 100);
+                    }
+                } catch (e) {
+                    console.error('Error loading sessions:', e);
+                    sessions = [];
+                }
+            }
+            
+            const savedMode = localStorage.getItem('aviMode');
+            if (savedMode) {
+                currentMode = savedMode;
+                document.body.className = savedMode + '-mode';
+            }
+        }
         // Initialize on load
         window.addEventListener('load', init);
         
@@ -2789,29 +2830,45 @@ function verifyCalculations() {
         function recoverSessions() {
     if (sessionsRef) {
         sessionsRef.once('value', (snapshot) => {
-            const data = snapshot.val();
-            if (data) {
-                let recovered = 0;
-                Object.keys(data).forEach(key => {
-                    const session = data[key];
-                    if ((session.status === 'completed' || session.duration) && 
-                        !sessions.find(s => s.startTime === session.startTime)) {
-                        sessions.push(session);
-                        recovered++;
-                    }
-                });
-                sessions.sort((a, b) => (a.startTime || 0) - (b.startTime || 0));
-                updateSessionLog();
-                saveLocalData();
-                showAlert('success', '🔄 Recovery Complete', `Recovered ${recovered} session(s) from cloud`);
-            } else {
-                showAlert('info', '🔄 No Sessions Found', 'No sessions to recover');
-            }
-        });
+                const data = snapshot.val();
+                if (data) {
+                    sessions = [];
+                    Object.keys(data).forEach(key => {
+                        const session = data[key];
+                        session.firebaseId = key;
+                        // Only add completed sessions
+                        if (session.status === 'completed' || session.duration) {
+                            sessions.push(session);
+                        }
+                    });
+                    sessions.sort((a, b) => (a.startTime || 0) - (b.startTime || 0));
+                    updateSessionLog();
+                    saveLocalData(); // Save to local storage after loading from Firebase
+                }
+            });
     } else {
         showAlert('warning', '⚠️ Offline Mode', 'Cannot recover - Firebase not connected');
     }
 }
+        function debugSessions() {
+            console.log('=== SESSION DEBUG ===');
+            console.log('Sessions in memory:', sessions);
+            console.log('Sessions count:', sessions.length);
+            
+            const stored = localStorage.getItem('aviSessions');
+            if (stored) {
+                const storedSessions = JSON.parse(stored);
+                console.log('Sessions in localStorage:', storedSessions);
+                console.log('Stored count:', storedSessions.length);
+            } else {
+                console.log('No sessions in localStorage');
+            }
+            
+            // Force update the display
+            updateSessionLog();
+            
+            return sessions;
+        }
     </script>
 </body>
 </html>
