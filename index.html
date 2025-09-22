@@ -839,6 +839,76 @@
         </div>
     </div>
 
+    
+<!-- OB Report Modal -->
+    <div id="obReportModal" class="settings-modal" style="display: none;">
+        <div style="background: var(--glass-bg); backdrop-filter: blur(20px); padding: 20px; border-radius: 25px; max-width: 95%; width: 600px; max-height: 90vh; overflow-y: auto; position: relative;">
+            <button onclick="closeOBReport()" style="position: absolute; top: 15px; right: 15px; background: none; border: none; font-size: 24px; cursor: pointer; color: var(--text-light);">✕</button>
+            
+            <h2 style="color: var(--primary); margin-bottom: 20px; text-align: center;">📋 OB Fetal Movement Report</h2>
+            
+            <!-- Current Week Summary -->
+            <div style="background: linear-gradient(135deg, var(--primary-light), var(--primary)); color: white; padding: 15px; border-radius: 15px; margin-bottom: 20px;">
+                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; text-align: center;">
+                    <div>
+                        <div style="font-size: 24px; font-weight: bold;" id="obCurrentWeek">--</div>
+                        <div style="font-size: 11px; opacity: 0.9;">Current Week</div>
+                    </div>
+                    <div>
+                        <div style="font-size: 24px; font-weight: bold;" id="obWeekAverage">--</div>
+                        <div style="font-size: 11px; opacity: 0.9;">Avg Time (min)</div>
+                    </div>
+                    <div>
+                        <div style="font-size: 24px; font-weight: bold;" id="obCompletedDays">--</div>
+                        <div style="font-size: 11px; opacity: 0.9;">Days Tracked</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Kaiser-Style Chart -->
+            <div style="background: white; border-radius: 15px; padding: 15px; margin-bottom: 20px; overflow-x: auto;">
+                <h3 style="font-size: 16px; margin-bottom: 15px; color: var(--primary-dark);">Time to 10 Movements (Minutes)</h3>
+                <div id="kaiserChart" style="min-width: 500px;">
+                    <!-- Chart will be inserted here -->
+                </div>
+            </div>
+            
+            <!-- Historical Trends -->
+            <div style="background: rgba(255,255,255,0.1); border-radius: 15px; padding: 15px; margin-bottom: 20px;">
+                <h3 style="font-size: 16px; margin-bottom: 15px; color: var(--primary-dark);">📈 Historical Trends</h3>
+                <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px;">
+                    <div style="text-align: center; padding: 10px; background: rgba(255,255,255,0.1); border-radius: 10px;">
+                        <div style="font-size: 12px; color: var(--text-light); margin-bottom: 5px;">Last Week Average</div>
+                        <div style="font-size: 20px; font-weight: bold; color: var(--primary);" id="lastWeekAvg">-- min</div>
+                    </div>
+                    <div style="text-align: center; padding: 10px; background: rgba(255,255,255,0.1); border-radius: 10px;">
+                        <div style="font-size: 12px; color: var(--text-light); margin-bottom: 5px;">Best Time Overall</div>
+                        <div style="font-size: 20px; font-weight: bold; color: var(--success);" id="bestTimeOverall">-- min</div>
+                    </div>
+                    <div style="text-align: center; padding: 10px; background: rgba(255,255,255,0.1); border-radius: 10px;">
+                        <div style="font-size: 12px; color: var(--text-light); margin-bottom: 5px;">Monthly Average</div>
+                        <div style="font-size: 20px; font-weight: bold; color: var(--primary);" id="monthlyAvg">-- min</div>
+                    </div>
+                    <div style="text-align: center; padding: 10px; background: rgba(255,255,255,0.1); border-radius: 10px;">
+                        <div style="font-size: 12px; color: var(--text-light); margin-bottom: 5px;">Consistency Rate</div>
+                        <div style="font-size: 20px; font-weight: bold; color: var(--info);" id="consistencyRate">--%</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Export Options -->
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                <button class="btn btn-primary" onclick="exportOBReport()">📄 Export PDF</button>
+                <button class="btn" onclick="shareOBReport()" style="background: var(--info); color: white;">📧 Share Report</button>
+            </div>
+        </div>
+    </div>
+
+
+
+
+    
+
     <!-- User Setup Modal -->
     <div id="setupModal" class="settings-modal" style="display: none;">
         <div class="settings-content">
@@ -1255,6 +1325,12 @@
     <button class="btn" onclick="debugSessions()" style="width: 100%; margin-top: 10px; background: var(--primary); color: white;">
         🔍 Check Session Logs
     </button>
+
+<!-- OB Report Button -->
+    <button class="btn btn-primary" onclick="openOBReport()" style="position: fixed; bottom: 80px; right: 20px; width: 60px; height: 60px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 24px; box-shadow: 0 5px 20px rgba(155, 123, 184, 0.3); z-index: 800;">
+        📋
+    </button>
+    
     <!-- Bottom Navigation -->
     <div class="bottom-nav pregnancy-nav">
         <div class="nav-item active" onclick="switchTab('home')">
@@ -2827,6 +2903,277 @@ function verifyCalculations() {
                 `).join('');
             }
         }
+
+function openOBReport() {
+            document.getElementById('obReportModal').style.display = 'flex';
+            generateKaiserChart();
+            calculateOBStats();
+        }
+
+        function closeOBReport() {
+            document.getElementById('obReportModal').style.display = 'none';
+        }
+
+        function generateKaiserChart() {
+            const chartContainer = document.getElementById('kaiserChart');
+            const dueDate = localStorage.getItem('aviDueDate');
+            
+            if (!dueDate) {
+                chartContainer.innerHTML = '<div style="text-align: center; padding: 20px; color: var(--text-light);">Please set your due date in settings to generate chart</div>';
+                return;
+            }
+            
+            const due = new Date(dueDate);
+            const today = new Date();
+            const daysUntilDue = Math.floor((due - today) / (1000 * 60 * 60 * 24));
+            const currentWeek = 40 - Math.floor(daysUntilDue / 7);
+            
+            // Generate weeks from 28 to current week (max 42)
+            const startWeek = 28;
+            const endWeek = Math.min(currentWeek, 42);
+            
+            let chartHTML = '<table style="width: 100%; border-collapse: collapse; font-size: 11px;">';
+            
+            // Header row with weeks
+            chartHTML += '<tr><th style="border: 1px solid #ddd; padding: 5px; background: var(--accent);">Time</th>';
+            for (let week = startWeek; week <= endWeek; week++) {
+                chartHTML += `<th colspan="7" style="border: 1px solid #ddd; padding: 5px; background: var(--primary-light); color: white;">Week ${week}</th>`;
+            }
+            chartHTML += '</tr>';
+            
+            // Days of week row
+            chartHTML += '<tr><th style="border: 1px solid #ddd; padding: 5px;"></th>';
+            for (let week = startWeek; week <= endWeek; week++) {
+                ['M', 'T', 'W', 'T', 'F', 'S', 'S'].forEach(day => {
+                    chartHTML += `<th style="border: 1px solid #ddd; padding: 3px; font-size: 10px; background: #f9f9f9;">${day}</th>`;
+                });
+            }
+            chartHTML += '</tr>';
+            
+            // Time interval rows
+            const timeIntervals = ['10', '20', '30', '40', '50', '60', '90', '120'];
+            const timeLabels = ['10m', '20m', '30m', '40m', '50m', '1hr', '1.5hr', '2hr'];
+            
+            timeIntervals.forEach((interval, index) => {
+                chartHTML += '<tr>';
+                chartHTML += `<th style="border: 1px solid #ddd; padding: 5px; background: #f9f9f9;">${timeLabels[index]}</th>`;
+                
+                for (let week = startWeek; week <= endWeek; week++) {
+                    for (let day = 0; day < 7; day++) {
+                        const cellData = getKickDataForDay(week, day);
+                        let cellContent = '';
+                        let cellStyle = 'border: 1px solid #ddd; padding: 3px; text-align: center;';
+                        
+                        if (cellData && cellData.time > 0) {
+                            const minutes = Math.floor(cellData.time);
+                            if (minutes <= parseInt(interval)) {
+                                // Color based on how quickly 10 kicks were reached
+                                if (minutes <= 30) {
+                                    cellStyle += 'background: rgba(139, 195, 74, 0.3);'; // Green
+                                } else if (minutes <= 60) {
+                                    cellStyle += 'background: rgba(255, 193, 7, 0.2);'; // Yellow
+                                } else {
+                                    cellStyle += 'background: rgba(244, 67, 54, 0.2);'; // Red
+                                }
+                                
+                                // Only show in the row that matches the time
+                                if ((minutes <= parseInt(interval) && (index === 0 || minutes > parseInt(timeIntervals[index-1])))) {
+                                    cellContent = `<strong>${minutes}</strong>`;
+                                    if (cellData.type === 'session') {
+                                        cellContent += '<br><span style="font-size: 8px;">✓</span>';
+                                    }
+                                }
+                            }
+                        }
+                        
+                        // Highlight today
+                        if (week === currentWeek && day === new Date().getDay() - 1) {
+                            cellStyle += 'border: 2px solid var(--primary); font-weight: bold;';
+                        }
+                        
+                        chartHTML += `<td style="${cellStyle}">${cellContent}</td>`;
+                    }
+                }
+                chartHTML += '</tr>';
+            });
+            
+            chartHTML += '</table>';
+            chartContainer.innerHTML = chartHTML;
+            
+            // Update current week display
+            document.getElementById('obCurrentWeek').textContent = `Week ${currentWeek}`;
+        }
+
+        function getKickDataForDay(week, dayOfWeek) {
+            const dueDate = localStorage.getItem('aviDueDate');
+            if (!dueDate) return null;
+            
+            const due = new Date(dueDate);
+            const weeksFromDue = 40 - week;
+            const daysFromDue = (weeksFromDue * 7) - dayOfWeek;
+            const targetDate = new Date(due);
+            targetDate.setDate(targetDate.getDate() - daysFromDue);
+            
+            const dateString = targetDate.toDateString();
+            
+            // First check for timed sessions on this day
+            const daySessions = sessions.filter(s => 
+                new Date(s.startTime).toDateString() === dateString && s.kicks >= 10
+            );
+            
+            if (daySessions.length > 0) {
+                // Use the best (shortest) session time
+                const bestSession = daySessions.reduce((best, current) => 
+                    current.duration < best.duration ? current : best
+                );
+                return { time: bestSession.duration, type: 'session' };
+            }
+            
+            // Otherwise calculate from manual kicks
+            const dayKicks = kicks.filter(k => 
+                new Date(k.timestamp).toDateString() === dateString
+            ).sort((a, b) => a.timestamp - b.timestamp);
+            
+            if (dayKicks.length >= 10) {
+                // Find the shortest 10-kick window
+                let bestTime = Infinity;
+                for (let i = 0; i <= dayKicks.length - 10; i++) {
+                    const window = dayKicks.slice(i, i + 10);
+                    const duration = (window[9].timestamp - window[0].timestamp) / 60000; // Convert to minutes
+                    if (duration < bestTime) {
+                        bestTime = duration;
+                    }
+                }
+                return { time: Math.floor(bestTime), type: 'manual' };
+            }
+            
+            return null;
+        }
+
+        function calculateOBStats() {
+            const now = Date.now();
+            const oneWeekAgo = now - 7 * 24 * 60 * 60 * 1000;
+            const oneMonthAgo = now - 30 * 24 * 60 * 60 * 1000;
+            
+            // Calculate weekly average
+            let weekTotal = 0;
+            let weekCount = 0;
+            
+            for (let i = 0; i < 7; i++) {
+                const date = new Date(now - i * 24 * 60 * 60 * 1000);
+                const data = getKickDataForDay(
+                    40 - Math.floor((new Date(localStorage.getItem('aviDueDate')) - date) / (7 * 24 * 60 * 60 * 1000)),
+                    date.getDay()
+                );
+                if (data && data.time > 0) {
+                    weekTotal += data.time;
+                    weekCount++;
+                }
+            }
+            
+            document.getElementById('obWeekAverage').textContent = weekCount > 0 ? Math.round(weekTotal / weekCount) : '--';
+            document.getElementById('obCompletedDays').textContent = weekCount + '/7';
+            
+            // Calculate last week average
+            let lastWeekTotal = 0;
+            let lastWeekCount = 0;
+            
+            for (let i = 7; i < 14; i++) {
+                const date = new Date(now - i * 24 * 60 * 60 * 1000);
+                const data = getKickDataForDay(
+                    40 - Math.floor((new Date(localStorage.getItem('aviDueDate')) - date) / (7 * 24 * 60 * 60 * 1000)),
+                    date.getDay()
+                );
+                if (data && data.time > 0) {
+                    lastWeekTotal += data.time;
+                    lastWeekCount++;
+                }
+            }
+            
+            document.getElementById('lastWeekAvg').textContent = lastWeekCount > 0 ? Math.round(lastWeekTotal / lastWeekCount) + ' min' : '-- min';
+            
+            // Find best time overall
+            let bestTime = Infinity;
+            [...sessions.filter(s => s.kicks >= 10), ...kickWindows].forEach(item => {
+                const time = item.duration;
+                if (time < bestTime && time > 0) {
+                    bestTime = time;
+                }
+            });
+            
+            document.getElementById('bestTimeOverall').textContent = bestTime < Infinity ? bestTime + ' min' : '-- min';
+            
+            // Monthly average
+            const monthData = [];
+            for (let i = 0; i < 30; i++) {
+                const date = new Date(now - i * 24 * 60 * 60 * 1000);
+                const data = getKickDataForDay(
+                    40 - Math.floor((new Date(localStorage.getItem('aviDueDate')) - date) / (7 * 24 * 60 * 60 * 1000)),
+                    date.getDay()
+                );
+                if (data && data.time > 0) {
+                    monthData.push(data.time);
+                }
+            }
+            
+            document.getElementById('monthlyAvg').textContent = monthData.length > 0 ? 
+                Math.round(monthData.reduce((a, b) => a + b, 0) / monthData.length) + ' min' : '-- min';
+            
+            // Consistency rate (days with tracking / total days)
+            const consistencyRate = Math.round((monthData.length / 30) * 100);
+            document.getElementById('consistencyRate').textContent = consistencyRate + '%';
+        }
+
+        function exportOBReport() {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            
+            doc.setFontSize(20);
+            doc.text("OB Fetal Movement Report", 20, 20);
+            
+            doc.setFontSize(12);
+            doc.text(`Patient: ${currentUser ? currentUser.name : 'Unknown'}`, 20, 35);
+            doc.text(`Date: ${new Date().toLocaleDateString()}`, 20, 45);
+            doc.text(`Current Week: ${document.getElementById('obCurrentWeek').textContent}`, 20, 55);
+            
+            doc.text('Weekly Summary:', 20, 70);
+            doc.text(`Average time to 10 movements: ${document.getElementById('obWeekAverage').textContent} minutes`, 30, 80);
+            doc.text(`Days tracked this week: ${document.getElementById('obCompletedDays').textContent}`, 30, 90);
+            
+            doc.text('Historical Data:', 20, 105);
+            doc.text(`Last week average: ${document.getElementById('lastWeekAvg').textContent}`, 30, 115);
+            doc.text(`Best time overall: ${document.getElementById('bestTimeOverall').textContent}`, 30, 125);
+            doc.text(`Monthly average: ${document.getElementById('monthlyAvg').textContent}`, 30, 135);
+            doc.text(`Consistency rate: ${document.getElementById('consistencyRate').textContent}`, 30, 145);
+            
+            doc.save('ob-fetal-report.pdf');
+        }
+
+        function shareOBReport() {
+            const reportText = `OB Fetal Movement Report
+Current Week: ${document.getElementById('obCurrentWeek').textContent}
+Average time to 10: ${document.getElementById('obWeekAverage').textContent} min
+Days tracked: ${document.getElementById('obCompletedDays').textContent}
+Monthly consistency: ${document.getElementById('consistencyRate').textContent}`;
+            
+            if (navigator.share) {
+                navigator.share({
+                    title: 'OB Fetal Movement Report',
+                    text: reportText
+                });
+            } else {
+                // Fallback - copy to clipboard
+                navigator.clipboard.writeText(reportText);
+                showAlert('info', '📋 Copied', 'Report copied to clipboard');
+            }
+        }
+
+
+
+
+
+
+        
         function recoverSessions() {
     if (sessionsRef) {
         sessionsRef.once('value', (snapshot) => {
