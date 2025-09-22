@@ -2981,11 +2981,13 @@ function openOBReport() {
         }
 
         function generateKaiserChart() {
+            console.log('Generating Kaiser Chart...');
             const chartContainer = document.getElementById('kaiserChart');
             const dueDate = localStorage.getItem('aviDueDate');
             
             if (!dueDate) {
-                chartContainer.innerHTML = '<div style="text-align: center; padding: 20px; color: var(--text-light);">Please set your due date in settings to generate chart</div>';
+                console.log('No due date set');
+               chartContainer.innerHTML = '<div style="text-align: center; padding: 20px; color: var(--text-light);">Please set your due date in settings to generate chart</div>';
                 return;
             }
             
@@ -3093,6 +3095,8 @@ function openOBReport() {
             
             // Add legend
             chartHTML += '</table></div>';
+            console.log('Chart HTML generated, length:', chartHTML.length);
+chartContainer.innerHTML = chartHTML;
             chartHTML += `
                 <div style="margin-top: 15px; padding: 10px; background: rgba(255,255,255,0.1); border-radius: 10px;">
                     <div style="font-size: 11px; margin-bottom: 8px;"><strong>Color Guide:</strong></div>
