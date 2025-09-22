@@ -834,7 +834,19 @@
                 <div id="currentUser" style="padding: 10px; background: var(--accent); border-radius: 10px; margin-bottom: 10px;"></div>
                 <button class="btn btn-primary" onclick="resetUser()" style="width: 100%;">Change User</button>
             </div>
-            
+            <div style="margin-bottom: 25px;">
+                <h3 style="font-size: 16px; margin-bottom: 10px;">📅 Pregnancy Details</h3>
+                <div style="padding: 15px; background: rgba(255,255,255,0.1); backdrop-filter: blur(5px); border-radius: 10px;">
+                    <label style="font-size: 13px; color: var(--text-light); display: block; margin-bottom: 8px;">Due Date:</label>
+                    <input type="date" id="dueDateInput" style="width: 100%; padding: 8px; border: 1px solid rgba(255,255,255,0.2); background: rgba(255,255,255,0.1); border-radius: 8px; color: var(--text);" onchange="saveDueDate()">
+                    
+                    <label style="font-size: 13px; color: var(--text-light); display: block; margin-bottom: 8px; margin-top: 15px;">Mother's Name:</label>
+                    <input type="text" id="motherNameInput" placeholder="Enter mother's name" style="width: 100%; padding: 8px; border: 1px solid rgba(255,255,255,0.2); background: rgba(255,255,255,0.1); border-radius: 8px; color: var(--text); margin-bottom: 10px;" onchange="saveMotherName()">
+                    
+                    <label style="font-size: 13px; color: var(--text-light); display: block; margin-bottom: 8px;">Baby's Name (optional):</label>
+                    <input type="text" id="babyNameInput" placeholder="Enter baby's name or nickname" style="width: 100%; padding: 8px; border: 1px solid rgba(255,255,255,0.2); background: rgba(255,255,255,0.1); border-radius: 8px; color: var(--text);" onchange="saveBabyName()">
+                </div>
+            </div>
             <button class="btn" onclick="closeSettings()" style="width: 100%; background: var(--accent); color: var(--text);">Close</button>
         </div>
     </div>
@@ -1422,7 +1434,7 @@
             updateAllStats();
             updateMovementQualityScore();
             generatePredictiveInsights();
-            
+            updateBabyNameDisplay();
             // Update timers
             setInterval(updateTimers, 1000);
             
@@ -2625,6 +2637,25 @@ function verifyCalculations() {
         function openSettings() {
             document.getElementById('settingsModal').style.display = 'flex';
             updateUserDisplay();
+            
+            // Load saved values
+            const dueDate = localStorage.getItem('aviDueDate');
+            if (dueDate && document.getElementById('dueDateInput')) {
+                document.getElementById('dueDateInput').value = dueDate;
+            }
+            
+            const motherName = localStorage.getItem('aviMotherName');
+            if (motherName && document.getElementById('motherNameInput')) {
+                document.getElementById('motherNameInput').value = motherName;
+            }
+            
+            const babyName = localStorage.getItem('aviBabyName');
+            if (babyName && document.getElementById('babyNameInput')) {
+                document.getElementById('babyNameInput').value = babyName;
+            }
+
+
+            
         }
 
         function closeSettings() {
@@ -2644,7 +2675,42 @@ function verifyCalculations() {
             localStorage.removeItem('aviTrackerUser');
             location.reload();
         }
+function saveDueDate() {
+            const dueDate = document.getElementById('dueDateInput').value;
+            if (dueDate) {
+                localStorage.setItem('aviDueDate', dueDate);
+                updateGestationalAge();
+                showAlert('success', '✅ Due Date Saved', 'Your pregnancy timeline has been updated');
+            }
+        }
 
+        function saveMotherName() {
+            const motherName = document.getElementById('motherNameInput').value;
+            if (motherName) {
+                localStorage.setItem('aviMotherName', motherName);
+                showAlert('success', '✅ Saved', 'Mother\'s name updated');
+            }
+        }
+
+        function saveBabyName() {
+            const babyName = document.getElementById('babyNameInput').value;
+            if (babyName) {
+                localStorage.setItem('aviBabyName', babyName);
+                showAlert('success', '✅ Saved', 'Baby\'s name updated');
+                // Update the header if baby name is set
+                updateBabyNameDisplay();
+            }
+        }
+
+        function updateBabyNameDisplay() {
+            const babyName = localStorage.getItem('aviBabyName');
+            if (babyName && babyName !== 'Avi') {
+                document.querySelector('.header h1').textContent = `${babyName}'s Journey`;
+            }
+        }
+
+
+        
         function exportReport() {
             const { jsPDF } = window.jspdf;
             const doc = new jsPDF();
@@ -2925,96 +2991,144 @@ function openOBReport() {
             
             const due = new Date(dueDate);
             const today = new Date();
-            const daysUntilDue = Math.floor((due - today) / (1000 * 60 * 60 * 24));
-            const currentWeek = 40 - Math.floor(daysUntilDue / 7);
             
-            // Generate weeks from 28 to current week (max 42)
+            // Calculate when week 28 started (12 weeks before due date)
+            const week28Start = new Date(due);
+            week28Start.setDate(week28Start.getDate() - (12 * 7)); // 40 - 28 = 12 weeks
+            
+            // Calculate current week
+            const daysPregnant = Math.floor((today - week28Start) / (1000 * 60 * 60 * 24));
+            const currentWeek = 28 + Math.floor(daysPregnant / 7);
+            
+            // Only show from week 28 onwards
             const startWeek = 28;
-            const endWeek = Math.min(currentWeek, 42);
+            const endWeek = Math.min(currentWeek + 1, 42); // Show current week + 1 for planning
             
-            let chartHTML = '<table style="width: 100%; border-collapse: collapse; font-size: 11px;">';
+            let chartHTML = '<div style="overflow-x: auto;"><table style="min-width: 100%; border-collapse: collapse; font-size: 11px;">';
             
             // Header row with weeks
-            chartHTML += '<tr><th style="border: 1px solid #ddd; padding: 5px; background: var(--accent);">Time</th>';
+            chartHTML += '<tr><th style="border: 1px solid #ddd; padding: 5px; background: var(--accent); position: sticky; left: 0; z-index: 10;">Time</th>';
             for (let week = startWeek; week <= endWeek; week++) {
                 chartHTML += `<th colspan="7" style="border: 1px solid #ddd; padding: 5px; background: var(--primary-light); color: white;">Week ${week}</th>`;
             }
             chartHTML += '</tr>';
             
-            // Days of week row
-            chartHTML += '<tr><th style="border: 1px solid #ddd; padding: 5px;"></th>';
+            // Days of week row with actual dates
+            chartHTML += '<tr><th style="border: 1px solid #ddd; padding: 5px; position: sticky; left: 0; background: white; z-index: 10;"></th>';
             for (let week = startWeek; week <= endWeek; week++) {
-                ['M', 'T', 'W', 'T', 'F', 'S', 'S'].forEach(day => {
-                    chartHTML += `<th style="border: 1px solid #ddd; padding: 3px; font-size: 10px; background: #f9f9f9;">${day}</th>`;
-                });
+                const weekStartDate = new Date(week28Start);
+                weekStartDate.setDate(weekStartDate.getDate() + ((week - 28) * 7));
+                
+                for (let day = 0; day < 7; day++) {
+                    const currentDate = new Date(weekStartDate);
+                    currentDate.setDate(currentDate.getDate() + day);
+                    const dayLetter = ['S', 'M', 'T', 'W', 'T', 'F', 'S'][currentDate.getDay()];
+                    const dayNum = currentDate.getDate();
+                    chartHTML += `<th style="border: 1px solid #ddd; padding: 3px; font-size: 9px; background: #f9f9f9;">
+                        <div>${dayLetter}</div>
+                        <div style="font-size: 8px; opacity: 0.7;">${dayNum}</div>
+                    </th>`;
+                }
             }
             chartHTML += '</tr>';
             
-            // Time interval rows
-            const timeIntervals = ['10', '20', '30', '40', '50', '60', '90', '120'];
-            const timeLabels = ['10m', '20m', '30m', '40m', '50m', '1hr', '1.5hr', '2hr'];
+            // Data rows - single row showing average times
+            chartHTML += '<tr>';
+            chartHTML += `<th style="border: 1px solid #ddd; padding: 5px; background: #f9f9f9; position: sticky; left: 0; z-index: 10;">Avg Min</th>`;
             
-            timeIntervals.forEach((interval, index) => {
-                chartHTML += '<tr>';
-                chartHTML += `<th style="border: 1px solid #ddd; padding: 5px; background: #f9f9f9;">${timeLabels[index]}</th>`;
+            for (let week = startWeek; week <= endWeek; week++) {
+                const weekStartDate = new Date(week28Start);
+                weekStartDate.setDate(weekStartDate.getDate() + ((week - 28) * 7));
                 
-                for (let week = startWeek; week <= endWeek; week++) {
-                    for (let day = 0; day < 7; day++) {
-                        const cellData = getKickDataForDay(week, day);
-                        let cellContent = '';
-                        let cellStyle = 'border: 1px solid #ddd; padding: 3px; text-align: center;';
-                        
-                        if (cellData && cellData.time > 0) {
-                            const minutes = Math.floor(cellData.time);
-                            if (minutes <= parseInt(interval)) {
-                                // Color based on how quickly 10 kicks were reached
-                                if (minutes <= 30) {
-                                    cellStyle += 'background: rgba(139, 195, 74, 0.3);'; // Green
-                                } else if (minutes <= 60) {
-                                    cellStyle += 'background: rgba(255, 193, 7, 0.2);'; // Yellow
-                                } else {
-                                    cellStyle += 'background: rgba(244, 67, 54, 0.2);'; // Red
-                                }
-                                
-                                // Only show in the row that matches the time
-                                if ((minutes <= parseInt(interval) && (index === 0 || minutes > parseInt(timeIntervals[index-1])))) {
-                                    cellContent = `<strong>${minutes}</strong>`;
-                                    if (cellData.type === 'session') {
-                                        cellContent += '<br><span style="font-size: 8px;">✓</span>';
-                                    }
-                                }
-                            }
-                        }
-                        
-                        // Highlight today
-                        if (week === currentWeek && day === new Date().getDay() - 1) {
-                            cellStyle += 'border: 2px solid var(--primary); font-weight: bold;';
-                        }
-                        
-                        chartHTML += `<td style="${cellStyle}">${cellContent}</td>`;
+                for (let day = 0; day < 7; day++) {
+                    const currentDate = new Date(weekStartDate);
+                    currentDate.setDate(currentDate.getDate() + day);
+                    
+                    // Skip future dates
+                    if (currentDate > today) {
+                        chartHTML += `<td style="border: 1px solid #ddd; padding: 5px; text-align: center; background: #f5f5f5;"></td>`;
+                        continue;
                     }
+                    
+                    const cellData = getKickDataForDay(currentDate);
+                    let cellContent = '';
+                    let cellStyle = 'border: 1px solid #ddd; padding: 5px; text-align: center; font-weight: bold;';
+                    
+                    if (cellData && cellData.time > 0) {
+                        const minutes = Math.round(cellData.time);
+                        cellContent = minutes;
+                        
+                        // Heat map colors based on time
+                        if (minutes <= 20) {
+                            cellStyle += 'background: rgba(76, 175, 80, 0.8); color: white;'; // Dark green
+                        } else if (minutes <= 30) {
+                            cellStyle += 'background: rgba(139, 195, 74, 0.7); color: white;'; // Light green
+                        } else if (minutes <= 45) {
+                            cellStyle += 'background: rgba(255, 235, 59, 0.6); color: #333;'; // Yellow
+                        } else if (minutes <= 60) {
+                            cellStyle += 'background: rgba(255, 193, 7, 0.6); color: #333;'; // Amber
+                        } else if (minutes <= 90) {
+                            cellStyle += 'background: rgba(255, 152, 0, 0.6); color: white;'; // Orange
+                        } else {
+                            cellStyle += 'background: rgba(244, 67, 54, 0.6); color: white;'; // Red
+                        }
+                        
+                        // Add indicator for session vs manual
+                        if (cellData.type === 'session') {
+                            cellContent += '<br><span style="font-size: 8px;">📝</span>';
+                        }
+                    } else {
+                        cellStyle += 'background: white;';
+                    }
+                    
+                    // Highlight today
+                    if (currentDate.toDateString() === today.toDateString()) {
+                        cellStyle += 'border: 3px solid var(--primary); box-shadow: inset 0 0 0 1px var(--primary);';
+                    }
+                    
+                    chartHTML += `<td style="${cellStyle}">${cellContent}</td>`;
                 }
-                chartHTML += '</tr>';
-            });
+            }
+            chartHTML += '</tr>';
             
-            chartHTML += '</table>';
-            chartContainer.innerHTML = chartHTML;
+            // Add legend
+            chartHTML += '</table></div>';
+            chartHTML += `
+                <div style="margin-top: 15px; padding: 10px; background: rgba(255,255,255,0.1); border-radius: 10px;">
+                    <div style="font-size: 11px; margin-bottom: 8px;"><strong>Color Guide:</strong></div>
+                    <div style="display: flex; flex-wrap: wrap; gap: 10px; font-size: 10px;">
+                        <div style="display: flex; align-items: center; gap: 5px;">
+                            <div style="width: 20px; height: 20px; background: rgba(76, 175, 80, 0.8); border-radius: 3px;"></div>
+                            <span>≤20 min (Excellent)</span>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 5px;">
+                            <div style="width: 20px; height: 20px; background: rgba(139, 195, 74, 0.7); border-radius: 3px;"></div>
+                            <span>≤30 min (Great)</span>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 5px;">
+                            <div style="width: 20px; height: 20px; background: rgba(255, 235, 59, 0.6); border-radius: 3px;"></div>
+                            <span>≤45 min (Good)</span>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 5px;">
+                            <div style="width: 20px; height: 20px; background: rgba(255, 193, 7, 0.6); border-radius: 3px;"></div>
+                            <span>≤60 min (Normal)</span>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 5px;">
+                            <div style="width: 20px; height: 20px; background: rgba(244, 67, 54, 0.6); border-radius: 3px;"></div>
+                            <span>>60 min (Monitor)</span>
+                        </div>
+                    </div>
+                    <div style="margin-top: 8px; font-size: 10px; color: var(--text-light);">
+                        📝 = Timed session recorded | Numbers show average minutes to 10 kicks
+                    </div>
+                </div>
+            `;
             
-            // Update current week display
             document.getElementById('obCurrentWeek').textContent = `Week ${currentWeek}`;
         }
 
-        function getKickDataForDay(week, dayOfWeek) {
-            const dueDate = localStorage.getItem('aviDueDate');
-            if (!dueDate) return null;
-            
-            const due = new Date(dueDate);
-            const weeksFromDue = 40 - week;
-            const daysFromDue = (weeksFromDue * 7) - dayOfWeek;
-            const targetDate = new Date(due);
-            targetDate.setDate(targetDate.getDate() - daysFromDue);
-            
-            const dateString = targetDate.toDateString();
+        function getKickDataForDay(date) {
+            const dateString = date.toDateString();
             
             // First check for timed sessions on this day
             const daySessions = sessions.filter(s => 
@@ -3022,11 +3136,10 @@ function openOBReport() {
             );
             
             if (daySessions.length > 0) {
-                // Use the best (shortest) session time
-                const bestSession = daySessions.reduce((best, current) => 
-                    current.duration < best.duration ? current : best
-                );
-                return { time: bestSession.duration, type: 'session' };
+                // Calculate average of all sessions
+                const totalTime = daySessions.reduce((sum, session) => sum + session.duration, 0);
+                const avgTime = totalTime / daySessions.length;
+                return { time: avgTime, type: 'session' };
             }
             
             // Otherwise calculate from manual kicks
@@ -3035,16 +3148,18 @@ function openOBReport() {
             ).sort((a, b) => a.timestamp - b.timestamp);
             
             if (dayKicks.length >= 10) {
-                // Find the shortest 10-kick window
-                let bestTime = Infinity;
+                // Find ALL 10-kick windows and average them
+                const windows = [];
                 for (let i = 0; i <= dayKicks.length - 10; i++) {
                     const window = dayKicks.slice(i, i + 10);
                     const duration = (window[9].timestamp - window[0].timestamp) / 60000; // Convert to minutes
-                    if (duration < bestTime) {
-                        bestTime = duration;
-                    }
+                    windows.push(duration);
                 }
-                return { time: Math.floor(bestTime), type: 'manual' };
+                
+                if (windows.length > 0) {
+                    const avgTime = windows.reduce((sum, time) => sum + time, 0) / windows.length;
+                    return { time: avgTime, type: 'manual' };
+                }
             }
             
             return null;
@@ -3132,7 +3247,13 @@ function openOBReport() {
             doc.text("OB Fetal Movement Report", 20, 20);
             
             doc.setFontSize(12);
-            doc.text(`Patient: ${currentUser ? currentUser.name : 'Unknown'}`, 20, 35);
+            const motherName = localStorage.getItem('aviMotherName') || (currentUser ? currentUser.name : 'Unknown');
+            const babyName = localStorage.getItem('aviBabyName') || 'Baby';
+            
+            doc.text(`Patient: ${motherName}`, 20, 35);
+            doc.text(`Baby: ${babyName}`, 20, 40);
+            doc.text(`Date: ${new Date().toLocaleDateString()}`, 20, 50);
+            doc.text(`Current Week: ${document.getElementById('obCurrentWeek').textContent}`, 20, 60);
             doc.text(`Date: ${new Date().toLocaleDateString()}`, 20, 45);
             doc.text(`Current Week: ${document.getElementById('obCurrentWeek').textContent}`, 20, 55);
             
