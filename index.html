@@ -3176,10 +3176,7 @@ function openOBReport() {
             
             for (let i = 0; i < 7; i++) {
                 const date = new Date(now - i * 24 * 60 * 60 * 1000);
-                const data = getKickDataForDay(
-                    40 - Math.floor((new Date(localStorage.getItem('aviDueDate')) - date) / (7 * 24 * 60 * 60 * 1000)),
-                    date.getDay()
-                );
+                const data = getKickDataForDay(date);
                 if (data && data.time > 0) {
                     weekTotal += data.time;
                     weekCount++;
@@ -3195,10 +3192,7 @@ function openOBReport() {
             
             for (let i = 7; i < 14; i++) {
                 const date = new Date(now - i * 24 * 60 * 60 * 1000);
-                const data = getKickDataForDay(
-                    40 - Math.floor((new Date(localStorage.getItem('aviDueDate')) - date) / (7 * 24 * 60 * 60 * 1000)),
-                    date.getDay()
-                );
+                const data = getKickDataForDay(date);
                 if (data && data.time > 0) {
                     lastWeekTotal += data.time;
                     lastWeekCount++;
@@ -3222,10 +3216,7 @@ function openOBReport() {
             const monthData = [];
             for (let i = 0; i < 30; i++) {
                 const date = new Date(now - i * 24 * 60 * 60 * 1000);
-                const data = getKickDataForDay(
-                    40 - Math.floor((new Date(localStorage.getItem('aviDueDate')) - date) / (7 * 24 * 60 * 60 * 1000)),
-                    date.getDay()
-                );
+                const data = getKickDataForDay(date);
                 if (data && data.time > 0) {
                     monthData.push(data.time);
                 }
