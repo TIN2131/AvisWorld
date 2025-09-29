@@ -3189,107 +3189,115 @@ function openOBReport() {
 }
 
         function getKickDataForDay(date) {
-            const dateString = date.toDateString();
-            
-            // First check for timed sessions on this day
-            const daySessions = sessions.filter(s => 
-                new Date(s.startTime).toDateString() === dateString && s.kicks >= 10
-            );
-            
-            if (daySessions.length > 0) {
-                // Calculate average of all sessions
-                const totalTime = daySessions.reduce((sum, session) => sum + session.duration, 0);
-                const avgTime = totalTime / daySessions.length;
-                return { time: avgTime, type: 'session' };
+    const dateString = date.toDateString();
+    
+    // First check for timed sessions on this day
+    const daySessions = sessions.filter(s => 
+        new Date(s.startTime).toDateString() === dateString && s.kicks >= 10
+    );
+    
+    if (daySessions.length > 0) {
+        // Find the BEST (shortest) time from all sessions
+        const bestSessionTime = Math.min(...daySessions.map(session => session.duration));
+        return { time: bestSessionTime, type: 'session' };
+    }
+    
+    // Otherwise calculate from manual kicks
+    const dayKicks = kicks.filter(k => 
+        new Date(k.timestamp).toDateString() === dateString
+    ).sort((a, b) => a.timestamp - b.timestamp);
+    
+    if (dayKicks.length >= 10) {
+        // Find the BEST (shortest) 10-kick window
+        let bestTime = Infinity;
+        for (let i = 0; i <= dayKicks.length - 10; i++) {
+            const window = dayKicks.slice(i, i + 10);
+            const duration = (window[9].timestamp - window[0].timestamp) / 60000; // Convert to minutes
+            if (duration < bestTime) {
+                bestTime = duration;
             }
-            
-            // Otherwise calculate from manual kicks
-            const dayKicks = kicks.filter(k => 
-                new Date(k.timestamp).toDateString() === dateString
-            ).sort((a, b) => a.timestamp - b.timestamp);
-            
-            if (dayKicks.length >= 10) {
-                // Find ALL 10-kick windows and average them
-                const windows = [];
-                for (let i = 0; i <= dayKicks.length - 10; i++) {
-                    const window = dayKicks.slice(i, i + 10);
-                    const duration = (window[9].timestamp - window[0].timestamp) / 60000; // Convert to minutes
-                    windows.push(duration);
-                }
-                
-                if (windows.length > 0) {
-                    const avgTime = windows.reduce((sum, time) => sum + time, 0) / windows.length;
-                    return { time: avgTime, type: 'manual' };
-                }
-            }
-            
-            return null;
         }
+        
+        if (bestTime < Infinity) {
+            return { time: bestTime, type: 'manual' };
+        }
+    }
+    
+    return null;
+}
 
         function calculateOBStats() {
-            const now = Date.now();
-            const oneWeekAgo = now - 7 * 24 * 60 * 60 * 1000;
-            const oneMonthAgo = now - 30 * 24 * 60 * 60 * 1000;
-            
-            // Calculate weekly average
-            let weekTotal = 0;
-            let weekCount = 0;
-            
-            for (let i = 0; i < 7; i++) {
-                const date = new Date(now - i * 24 * 60 * 60 * 1000);
-                const data = getKickDataForDay(date);
-                if (data && data.time > 0) {
-                    weekTotal += data.time;
-                    weekCount++;
-                }
+    const now = Date.now();
+    const oneWeekAgo = now - 7 * 24 * 60 * 60 * 1000;
+    const oneMonthAgo = now - 30 * 24 * 60 * 60 * 1000;
+    
+    // Calculate weekly best times (not average)
+    let weekBest = Infinity;
+    let weekCount = 0;
+    
+    for (let i = 0; i < 7; i++) {
+        const date = new Date(now - i * 24 * 60 * 60 * 1000);
+        const data = getKickDataForDay(date);
+        if (data && data.time > 0) {
+            if (data.time < weekBest) {
+                weekBest = data.time;
             }
-            
-            document.getElementById('obWeekAverage').textContent = weekCount > 0 ? Math.round(weekTotal / weekCount) : '--';
-            document.getElementById('obCompletedDays').textContent = weekCount + '/7';
-            
-            // Calculate last week average
-            let lastWeekTotal = 0;
-            let lastWeekCount = 0;
-            
-            for (let i = 7; i < 14; i++) {
-                const date = new Date(now - i * 24 * 60 * 60 * 1000);
-                const data = getKickDataForDay(date);
-                if (data && data.time > 0) {
-                    lastWeekTotal += data.time;
-                    lastWeekCount++;
-                }
-            }
-            
-            document.getElementById('lastWeekAvg').textContent = lastWeekCount > 0 ? Math.round(lastWeekTotal / lastWeekCount) + ' min' : '-- min';
-            
-            // Find best time overall
-            let bestTime = Infinity;
-            [...sessions.filter(s => s.kicks >= 10), ...kickWindows].forEach(item => {
-                const time = item.duration;
-                if (time < bestTime && time > 0) {
-                    bestTime = time;
-                }
-            });
-            
-            document.getElementById('bestTimeOverall').textContent = bestTime < Infinity ? bestTime + ' min' : '-- min';
-            
-            // Monthly average
-            const monthData = [];
-            for (let i = 0; i < 30; i++) {
-                const date = new Date(now - i * 24 * 60 * 60 * 1000);
-                const data = getKickDataForDay(date);
-                if (data && data.time > 0) {
-                    monthData.push(data.time);
-                }
-            }
-            
-            document.getElementById('monthlyAvg').textContent = monthData.length > 0 ? 
-                Math.round(monthData.reduce((a, b) => a + b, 0) / monthData.length) + ' min' : '-- min';
-            
-            // Consistency rate (days with tracking / total days)
-            const consistencyRate = Math.round((monthData.length / 30) * 100);
-            document.getElementById('consistencyRate').textContent = consistencyRate + '%';
+            weekCount++;
         }
+    }
+    
+    document.getElementById('obWeekAverage').textContent = weekBest < Infinity ? Math.round(weekBest) : '--';
+    document.getElementById('obCompletedDays').textContent = weekCount + '/7';
+    
+    // Calculate last week's best
+    let lastWeekBest = Infinity;
+    let lastWeekCount = 0;
+    
+    for (let i = 7; i < 14; i++) {
+        const date = new Date(now - i * 24 * 60 * 60 * 1000);
+        const data = getKickDataForDay(date);
+        if (data && data.time > 0) {
+            if (data.time < lastWeekBest) {
+                lastWeekBest = data.time;
+            }
+            lastWeekCount++;
+        }
+    }
+    
+    document.getElementById('lastWeekAvg').textContent = lastWeekBest < Infinity ? Math.round(lastWeekBest) + ' min' : '-- min';
+    
+    // Find best time overall (this part stays the same)
+    let bestTime = Infinity;
+    [...sessions.filter(s => s.kicks >= 10), ...kickWindows].forEach(item => {
+        const time = item.duration;
+        if (time < bestTime && time > 0) {
+            bestTime = time;
+        }
+    });
+    
+    document.getElementById('bestTimeOverall').textContent = bestTime < Infinity ? bestTime + ' min' : '-- min';
+    
+    // Monthly best time
+    let monthBest = Infinity;
+    let monthCount = 0;
+    for (let i = 0; i < 30; i++) {
+        const date = new Date(now - i * 24 * 60 * 60 * 1000);
+        const data = getKickDataForDay(date);
+        if (data && data.time > 0) {
+            if (data.time < monthBest) {
+                monthBest = data.time;
+            }
+            monthCount++;
+        }
+    }
+    
+    document.getElementById('monthlyAvg').textContent = monthBest < Infinity ? 
+        Math.round(monthBest) + ' min' : '-- min';
+    
+    // Consistency rate (days with tracking / total days)
+    const consistencyRate = Math.round((monthCount / 30) * 100);
+    document.getElementById('consistencyRate').textContent = consistencyRate + '%';
+}
 
         function exportOBReport() {
             const { jsPDF } = window.jspdf;
