@@ -3012,7 +3012,7 @@ function openOBReport() {
     let chartHTML = '<div style="overflow-x: auto;"><table style="min-width: 100%; border-collapse: collapse; font-size: 11px;">';
     
     // Header row with weeks
-    chartHTML += '<tr><th style="border: 1px solid #ddd; padding: 5px; background: var(--accent); position: sticky; left: 0; z-index: 10;">Minutes</th>';
+    chartHTML += `<th style="border: 1px solid #ddd; padding: 5px; background: var(--primary-light); color: white; position: sticky; left: 0; z-index: 10;">Best</th>`;
     for (let week = startWeek; week <= endWeek; week++) {
         chartHTML += `<th colspan="7" style="border: 1px solid #ddd; padding: 5px; background: var(--primary-light); color: white;">Week ${week}</th>`;
     }
@@ -3225,77 +3225,87 @@ function openOBReport() {
     
     return null;
 }
-
         function calculateOBStats() {
     const now = Date.now();
-    const oneWeekAgo = now - 7 * 24 * 60 * 60 * 1000;
-    const oneMonthAgo = now - 30 * 24 * 60 * 60 * 1000;
     
-    // Calculate weekly best times (not average)
-    let weekBest = Infinity;
+    // Collect best times for this week (each day's best)
+    const thisWeekBests = [];
     let weekCount = 0;
     
     for (let i = 0; i < 7; i++) {
         const date = new Date(now - i * 24 * 60 * 60 * 1000);
         const data = getKickDataForDay(date);
         if (data && data.time > 0) {
-            if (data.time < weekBest) {
-                weekBest = data.time;
-            }
+            thisWeekBests.push(data.time);
             weekCount++;
         }
     }
     
-    document.getElementById('obWeekAverage').textContent = weekBest < Infinity ? Math.round(weekBest) : '--';
+    // Calculate average of this week's best times
+    const weekAvgOfBests = thisWeekBests.length > 0 ? 
+        Math.round(thisWeekBests.reduce((a, b) => a + b, 0) / thisWeekBests.length) : null;
+    
+    document.getElementById('obWeekAverage').textContent = weekAvgOfBests !== null ? weekAvgOfBests : '--';
     document.getElementById('obCompletedDays').textContent = weekCount + '/7';
     
-    // Calculate last week's best
-    let lastWeekBest = Infinity;
-    let lastWeekCount = 0;
+    // Collect best times for last week (each day's best)
+    const lastWeekBests = [];
     
     for (let i = 7; i < 14; i++) {
         const date = new Date(now - i * 24 * 60 * 60 * 1000);
         const data = getKickDataForDay(date);
         if (data && data.time > 0) {
-            if (data.time < lastWeekBest) {
-                lastWeekBest = data.time;
-            }
-            lastWeekCount++;
+            lastWeekBests.push(data.time);
         }
     }
     
-    document.getElementById('lastWeekAvg').textContent = lastWeekBest < Infinity ? Math.round(lastWeekBest) + ' min' : '-- min';
+    // Calculate average of last week's best times
+    const lastWeekAvgOfBests = lastWeekBests.length > 0 ? 
+        Math.round(lastWeekBests.reduce((a, b) => a + b, 0) / lastWeekBests.length) : null;
     
-    // Find best time overall (this part stays the same)
-    let bestTime = Infinity;
-    [...sessions.filter(s => s.kicks >= 10), ...kickWindows].forEach(item => {
-        const time = item.duration;
-        if (time < bestTime && time > 0) {
-            bestTime = time;
+    document.getElementById('lastWeekAvg').textContent = lastWeekAvgOfBests !== null ? 
+        lastWeekAvgOfBests + ' min' : '-- min';
+    
+    // Find best time overall (single best across all time)
+    let bestTimeOverall = Infinity;
+    
+    // Check all sessions
+    sessions.filter(s => s.kicks >= 10).forEach(session => {
+        if (session.duration < bestTimeOverall && session.duration > 0) {
+            bestTimeOverall = session.duration;
         }
     });
     
-    document.getElementById('bestTimeOverall').textContent = bestTime < Infinity ? bestTime + ' min' : '-- min';
+    // Check all kick windows
+    kickWindows.forEach(window => {
+        if (window.duration < bestTimeOverall && window.duration > 0) {
+            bestTimeOverall = window.duration;
+        }
+    });
     
-    // Monthly best time
-    let monthBest = Infinity;
-    let monthCount = 0;
+    document.getElementById('bestTimeOverall').textContent = bestTimeOverall < Infinity ? 
+        bestTimeOverall + ' min' : '-- min';
+    
+    // Collect best times for the month (each day's best)
+    const monthBests = [];
+    
     for (let i = 0; i < 30; i++) {
         const date = new Date(now - i * 24 * 60 * 60 * 1000);
         const data = getKickDataForDay(date);
         if (data && data.time > 0) {
-            if (data.time < monthBest) {
-                monthBest = data.time;
-            }
-            monthCount++;
+            monthBests.push(data.time);
         }
     }
     
-    document.getElementById('monthlyAvg').textContent = monthBest < Infinity ? 
-        Math.round(monthBest) + ' min' : '-- min';
+    // Calculate average of the month's best times
+    const monthAvgOfBests = monthBests.length > 0 ? 
+        Math.round(monthBests.reduce((a, b) => a + b, 0) / monthBests.length) : null;
+    
+    document.getElementById('monthlyAvg').textContent = monthAvgOfBests !== null ? 
+        monthAvgOfBests + ' min' : '-- min';
     
     // Consistency rate (days with tracking / total days)
-    const consistencyRate = Math.round((monthCount / 30) * 100);
+    const consistencyRate = Math.round((monthBests.length / 30) * 100);
     document.getElementById('consistencyRate').textContent = consistencyRate + '%';
 }
 
